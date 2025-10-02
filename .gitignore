@@ -1,0 +1,52 @@
+node_modules/
+bin/
+obj/
+.env
+logs/
+# Visual Studio
+.vs/
+## Ignore pastas de build
+bin/
+obj/
+out/
+
+## Ignore arquivos temporários do Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+## Arquivos de log
+*.log
+
+## Diretórios de pacotes do NuGet
+packages/
+*.nupkg
+
+## Diretórios de dependências do .NET
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+## Configurações do Rider/IDE
+.idea/
+
+## Configurações de sistema
+*.DS_Store
+Thumbs.db
+
+## Publish
+*.publishsettings
+*.pubxml
+*.pubxml.user
+
+## Arquivos gerados pelo Visual Studio Code (opcional)
+.vscode/
+
+## Arquivos do ReSharper
+_ReSharper*/
+*.DotSettings.user
+
+## Arquivos de teste temporários
+TestResults/
