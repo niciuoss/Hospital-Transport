@@ -154,6 +154,37 @@ namespace HospitalTransport.Application.Services
             }
         }
 
+        public async Task<BaseResponse<IEnumerable<AppointmentResponse>>> GetAllAppointmentsAsync()
+        {
+            try
+            {
+                var appointments = await _unitOfWork.Appointments.FindAsync(a => a.IsActive);
+                var responses = new List<AppointmentResponse>();
+
+                foreach (var appointment in appointments.OrderByDescending(a => a.AppointmentDate))
+                {
+                    var patient = await _unitOfWork.Patients.GetByIdAsync(appointment.PatientId);
+                    var user = await _unitOfWork.Users.GetByIdAsync(appointment.CreatedByUserId);
+                    Patient? companion = null;
+
+                    if (appointment.CompanionId.HasValue)
+                    {
+                        companion = await _unitOfWork.Patients.GetByIdAsync(appointment.CompanionId.Value);
+                    }
+
+                    responses.Add(MapToAppointmentResponse(appointment, patient!, companion, user!));
+                }
+
+                return BaseResponse<IEnumerable<AppointmentResponse>>.SuccessResponse(responses);
+            }
+            catch (Exception ex)
+            {
+                return BaseResponse<IEnumerable<AppointmentResponse>>.FailureResponse(
+                    $"Erro ao buscar agendamentos: {ex.Message}"
+                );
+            }
+        }
+
         public async Task<BaseResponse<IEnumerable<AppointmentResponse>>> GetRecentAppointmentsAsync(int count)
         {
             try

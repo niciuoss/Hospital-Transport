@@ -23,7 +23,7 @@ namespace HospitalTransport.Application.Validators
                 .MaximumLength(200).WithMessage("Nome do hospital muito longo");
 
             RuleFor(x => x.TreatmentType)
-                .IsInEnum().WithMessage("Tipo de tratamento inválido");
+                .InclusiveBetween(1, 4).WithMessage("Tipo de tratamento inválido");
 
             RuleFor(x => x.TreatmentTypeOther)
                 .NotEmpty().When(x => x.TreatmentType == 4)

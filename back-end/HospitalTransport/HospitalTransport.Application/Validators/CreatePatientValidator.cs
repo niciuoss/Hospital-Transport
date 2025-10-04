@@ -29,8 +29,8 @@ namespace HospitalTransport.Application.Validators
                 .LessThan(150).WithMessage("Idade inválida");
 
             RuleFor(x => x.BirthDate)
-                .NotEmpty().WithMessage("Data de nascimento é obrigatória")
-                .LessThan(DateTime.Now).WithMessage("Data de nascimento não pode ser futura");
+                 .NotEmpty().WithMessage("Data de nascimento é obrigatória")
+                 .LessThan(DateOnly.FromDateTime(DateTime.Now)).WithMessage("Data de nascimento não pode ser futura");
 
             RuleFor(x => x.SusCardNumber)
                 .NotEmpty().WithMessage("Número do cartão SUS é obrigatório")

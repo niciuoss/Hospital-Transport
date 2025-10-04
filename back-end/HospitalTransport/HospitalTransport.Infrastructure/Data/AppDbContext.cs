@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using HospitalTransport.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace HospitalTransport.Infrastructure.Data
 {
@@ -13,6 +14,8 @@ namespace HospitalTransport.Infrastructure.Data
     {
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
         {
+            // Configurar Npgsql para usar timestamp sem timezone
+            AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
         }
 
         public DbSet<User> Users { get; set; }
@@ -47,6 +50,10 @@ namespace HospitalTransport.Infrastructure.Data
                 entity.Property(e => e.PhoneNumber).IsRequired().HasMaxLength(20);
                 entity.Property(e => e.MotherName).IsRequired().HasMaxLength(200);
 
+                // Converter DateOnly para Date no banco
+                entity.Property(e => e.BirthDate)
+                    .HasColumnType("date");
+
                 entity.HasIndex(e => e.CPF).IsUnique();
                 entity.HasIndex(e => e.SusCardNumber).IsUnique();
             });
@@ -60,6 +67,13 @@ namespace HospitalTransport.Infrastructure.Data
                 entity.Property(e => e.MedicalRecordNumber).IsRequired().HasMaxLength(50);
                 entity.Property(e => e.DestinationHospital).IsRequired().HasMaxLength(200);
                 entity.Property(e => e.TreatmentTypeOther).HasMaxLength(200);
+
+                // Configurar AppointmentDate como timestamp sem timezone
+                entity.Property(e => e.AppointmentDate)
+                    .HasColumnType("timestamp without time zone");
+
+                entity.Property(e => e.PrintedAt)
+                    .HasColumnType("timestamp without time zone");
 
                 // Relacionamento com Patient
                 entity.HasOne(e => e.Patient)
@@ -96,6 +110,24 @@ namespace HospitalTransport.Infrastructure.Data
                 CreatedAt = DateTime.UtcNow,
                 IsActive = true
             });
+        }
+
+        protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
+        {
+            // Configurar conversão automática de DateOnly
+            configurationBuilder.Properties<DateOnly>()
+                .HaveConversion<DateOnlyConverter>()
+                .HaveColumnType("date");
+        }
+    }
+
+    // Converter DateOnly para o banco de dados
+    public class DateOnlyConverter : Microsoft.EntityFrameworkCore.Storage.ValueConversion.ValueConverter<DateOnly, DateTime>
+    {
+        public DateOnlyConverter() : base(
+            dateOnly => dateOnly.ToDateTime(TimeOnly.MinValue),
+            dateTime => DateOnly.FromDateTime(dateTime))
+        {
         }
     }
 }

@@ -46,6 +46,19 @@ namespace HospitalTransport.API.Controllers
             return Ok(result);
         }
 
+        [HttpGet]
+        public async Task<IActionResult> GetAllPatients()
+        {
+            var result = await _patientService.GetAllPatientsAsync();
+
+            if (!result.Success)
+            {
+                return BadRequest(result);
+            }
+
+            return Ok(result);
+        }
+
         [HttpGet("{id}")]
         public async Task<IActionResult> GetPatientById(Guid id)
         {

@@ -107,7 +107,7 @@ namespace HospitalTransport.Infrastructure.Migrations
                         .HasColumnType("integer");
 
                     b.Property<DateTime>("BirthDate")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("date");
 
                     b.Property<string>("CPF")
                         .IsRequired()
@@ -203,8 +203,8 @@ namespace HospitalTransport.Infrastructure.Migrations
                     b.HasData(
                         new
                         {
-                            Id = new Guid("150c007b-8a58-4230-b89e-eaecebfee8a1"),
-                            CreatedAt = new DateTime(2025, 10, 2, 13, 27, 20, 123, DateTimeKind.Utc).AddTicks(9693),
+                            Id = new Guid("a71668e6-3753-4459-9be0-c4a10fd17ff4"),
+                            CreatedAt = new DateTime(2025, 10, 2, 18, 54, 23, 589, DateTimeKind.Utc).AddTicks(9083),
                             FullName = "Administrador do Sistema",
                             IsActive = true,
                             PasswordHash = "YWRtaW4xMjM=",

@@ -124,6 +124,27 @@ namespace HospitalTransport.Application.Services
             }
         }
 
+        public async Task<BaseResponse<IEnumerable<PatientResponse>>> GetAllPatientsAsync()
+        {
+            try
+            {
+                var patients = await _unitOfWork.Patients.FindAsync(p => p.IsActive);
+
+                var responses = patients
+                    .OrderBy(p => p.FullName)
+                    .Select(p => MapToPatientResponse(p))
+                    .ToList();
+
+                return BaseResponse<IEnumerable<PatientResponse>>.SuccessResponse(responses);
+            }
+            catch (Exception ex)
+            {
+                return BaseResponse<IEnumerable<PatientResponse>>.FailureResponse(
+                    $"Erro ao buscar pacientes: {ex.Message}"
+                );
+            }
+        }
+
         public async Task<BaseResponse<PatientResponse>> GetPatientByIdAsync(Guid id)
         {
             try

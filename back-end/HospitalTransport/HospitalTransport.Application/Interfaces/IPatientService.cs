@@ -11,6 +11,7 @@ namespace HospitalTransport.Application.Interfaces
         Task<BaseResponse<PatientResponse>> CreatePatientAsync(CreatePatientRequest request);
         Task<BaseResponse<PatientResponse>> UpdatePatientAsync(UpdatePatientRequest request);
         Task<BaseResponse<PatientResponse>> GetPatientByIdAsync(Guid id);
+        Task<BaseResponse<IEnumerable<PatientResponse>>> GetAllPatientsAsync();
         Task<BaseResponse<IEnumerable<PatientSearchResult>>> SearchPatientsAsync(string searchTerm);
         Task<BaseResponse<bool>> DeletePatientAsync(Guid id);
     }

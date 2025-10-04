@@ -28,6 +28,19 @@ namespace HospitalTransport.API.Controllers
             return CreatedAtAction(nameof(GetAppointmentById), new { id = result.Data!.Id }, result);
         }
 
+        [HttpGet]
+        public async Task<IActionResult> GetAllAppointments()
+        {
+            var result = await _appointmentService.GetAllAppointmentsAsync();
+
+            if (!result.Success)
+            {
+                return BadRequest(result);
+            }
+
+            return Ok(result);
+        }
+
         [HttpGet("{id}")]
         public async Task<IActionResult> GetAppointmentById(Guid id)
         {

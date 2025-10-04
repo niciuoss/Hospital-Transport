@@ -1,6 +1,7 @@
 using FluentValidation;
 using HospitalTransport.Application.DTOs.Appointment;
 using HospitalTransport.Application.DTOs.Patient;
+using HospitalTransport.Application.DTOs.User;
 using HospitalTransport.Application.Interfaces;
 using HospitalTransport.Application.Services;
 using HospitalTransport.Application.Validators;
@@ -42,12 +43,14 @@ builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IPatientService, PatientService>();
 builder.Services.AddScoped<IAppointmentService, AppointmentService>();
+builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IPdfService, PdfService>();
 
 // Registrar Validators
 builder.Services.AddScoped<IValidator<CreatePatientRequest>, CreatePatientValidator>();
 builder.Services.AddScoped<IValidator<CreateAppointmentRequest>, CreateAppointmentValidator>();
-
+builder.Services.AddScoped<IValidator<CreateUserRequest>, CreateUserValidator>(); 
+builder.Services.AddScoped<IValidator<ChangePasswordRequest>, ChangePasswordValidator>(); 
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

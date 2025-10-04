@@ -16,7 +16,7 @@ namespace HospitalTransport.Infrastructure.Services
     {
         public PdfService()
         {
-            // Configurar licença do QuestPDF (Community License)
+            // Licença do QuestPDF (Community License) - Lembrar de mudar!
             QuestPDF.Settings.License = LicenseType.Community;
         }
 

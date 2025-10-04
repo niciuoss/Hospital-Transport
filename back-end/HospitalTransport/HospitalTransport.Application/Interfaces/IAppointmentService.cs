@@ -10,6 +10,7 @@ namespace HospitalTransport.Application.Interfaces
     {
         Task<BaseResponse<AppointmentResponse>> CreateAppointmentAsync(CreateAppointmentRequest request);
         Task<BaseResponse<AppointmentResponse>> GetAppointmentByIdAsync(Guid id);
+        Task<BaseResponse<IEnumerable<AppointmentResponse>>> GetAllAppointmentsAsync();
         Task<BaseResponse<IEnumerable<AppointmentResponse>>> GetRecentAppointmentsAsync(int count);
         Task<BaseResponse<IEnumerable<SeatAvailabilityResponse>>> GetSeatAvailabilityAsync(DateTime date, bool isPriority);
         Task<BaseResponse<IEnumerable<AppointmentResponse>>> SearchAppointmentsAsync(string searchTerm);

@@ -12,7 +12,7 @@ namespace HospitalTransport.Application.DTOs.Patient
         public string RG { get; set; } = string.Empty;
         public string CPF { get; set; } = string.Empty;
         public int Age { get; set; }
-        public DateTime BirthDate { get; set; }
+        public DateOnly BirthDate { get; set; } 
         public string SusCardNumber { get; set; } = string.Empty;
         public string PhoneNumber { get; set; } = string.Empty;
         public string MotherName { get; set; } = string.Empty;
