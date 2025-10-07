@@ -8,7 +8,7 @@ import { Toaster } from "sonner";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Hospital Transport - Sistema de Agendamento",
+  title: "SATH - Sistema de Agendamento",
   description: "Sistema de agendamento de transporte hospitalar",
 };
 

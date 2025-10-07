@@ -6,7 +6,6 @@ using System.Text;
 using System.Threading.Tasks;
 using HospitalTransport.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
-using Npgsql;
 
 namespace HospitalTransport.Infrastructure.Data
 {
@@ -21,6 +20,7 @@ namespace HospitalTransport.Infrastructure.Data
         public DbSet<User> Users { get; set; }
         public DbSet<Patient> Patients { get; set; }
         public DbSet<Appointment> Appointments { get; set; }
+        public DbSet<SystemControl> SystemControl { get; set; } // ADICIONE ESTA LINHA
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -98,6 +98,16 @@ namespace HospitalTransport.Infrastructure.Data
                 entity.HasIndex(e => new { e.AppointmentDate, e.SeatNumber }).IsUnique();
             });
 
+            // Configuração da entidade SystemControl
+            modelBuilder.Entity<SystemControl>(entity =>
+            {
+                entity.ToTable("SystemControl");
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Message).HasMaxLength(500);
+                entity.Property(e => e.LastChanged)
+                    .HasColumnType("timestamp without time zone");
+            });
+
             // Seed inicial de usuário
             var defaultUserId = Guid.NewGuid();
             modelBuilder.Entity<User>().HasData(new User
@@ -109,6 +119,15 @@ namespace HospitalTransport.Infrastructure.Data
                 Role = "Admin",
                 CreatedAt = DateTime.UtcNow,
                 IsActive = true
+            });
+
+            // Seed SystemControl - Sistema habilitado por padrão
+            modelBuilder.Entity<SystemControl>().HasData(new SystemControl
+            {
+                Id = 1,
+                IsEnabled = true,
+                Message = "Sistema operando normalmente",
+                LastChanged = DateTime.UtcNow
             });
         }
 

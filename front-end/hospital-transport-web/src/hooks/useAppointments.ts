@@ -100,6 +100,27 @@ export function useAppointments() {
     }
   };
 
+  const downloadPassengerList = async (date: string) => {
+  try {
+    const response = await api.get('/appointments/passenger-list-pdf', {
+      params: { date },
+      responseType: 'blob'
+    });
+    
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `lista_passageiros_${date}.pdf`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    
+    toast.success('Lista de passageiros baixada com sucesso!');
+  } catch (error: any) {
+    toast.error(error.response?.data?.message || 'Erro ao baixar lista de passageiros');
+  }
+};
+
   return { 
     loading, 
     getAppointments, 
@@ -107,6 +128,7 @@ export function useAppointments() {
     getSeatAvailability, 
     createAppointment,
     downloadTicket,
-    deleteAppointment
+    deleteAppointment,
+    downloadPassengerList
   };
 }

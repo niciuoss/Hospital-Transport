@@ -61,6 +61,7 @@ if (app.Environment.IsDevelopment())
 }
 
 //app.UseMiddleware<HospitalTransport.API.Middlewares.ExceptionHandlingMiddleware>();
+app.UseMiddleware<HospitalTransport.API.Middlewares.SystemControlMiddleware>();
 
 app.UseHttpsRedirection();
 

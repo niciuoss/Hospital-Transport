@@ -3,8 +3,9 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { Header } from '@/components/layout/Header';
+//import { Header } from '@/components/layout/Header';
 import { Sidebar } from '@/components/layout/Sidebar';
+import { HeaderWithCover } from '@/components/layout/HeaderWithCover';
 
 export default function DashboardLayout({
   children,
@@ -37,7 +38,7 @@ export default function DashboardLayout({
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
+      <HeaderWithCover />
       <div className="flex">
         <Sidebar />
         <main className="flex-1 p-6">

@@ -313,6 +313,31 @@ namespace HospitalTransport.Application.Services
             }
         }
 
+        public async Task<BaseResponse<bool>> DeleteAppointmentAsync(Guid id)
+        {
+            try
+            {
+                var appointment = await _unitOfWork.Appointments.GetByIdAsync(id);
+                if (appointment == null)
+                {
+                    return BaseResponse<bool>.FailureResponse("Agendamento não encontrado");
+                }
+
+                // Soft delete
+                appointment.IsActive = false;
+                appointment.UpdatedAt = DateTime.UtcNow;
+
+                await _unitOfWork.Appointments.UpdateAsync(appointment);
+                await _unitOfWork.SaveChangesAsync();
+
+                return BaseResponse<bool>.SuccessResponse(true, "Agendamento cancelado com sucesso");
+            }
+            catch (Exception ex)
+            {
+                return BaseResponse<bool>.FailureResponse($"Erro ao cancelar agendamento: {ex.Message}");
+            }
+        }
+
         private AppointmentResponse MapToAppointmentResponse(
             Appointment appointment,
             Patient patient,

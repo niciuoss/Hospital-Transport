@@ -7,12 +7,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { FileText, Download, Calendar, Users, TrendingUp } from 'lucide-react';
+import { FileText, Calendar, Users, TrendingUp } from 'lucide-react';
 import { Appointment } from '@/types/appointment';
-import { formatDate, formatDateTime } from '@/lib/utils';
+import { toast } from 'sonner';
 
 export default function ReportsPage() {
-  const { getAppointments } = useAppointments();
+  const { getAppointments, downloadPassengerList } = useAppointments();
   const { getPatients } = usePatients();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [dateFrom, setDateFrom] = useState('');
@@ -71,29 +71,12 @@ export default function ReportsPage() {
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5);
 
-  const exportToCSV = () => {
-    const headers = ['Data', 'Paciente', 'CPF', 'Destino', 'Tratamento', 'Poltrona', 'Prioritário', 'Acompanhante'];
-    const rows = filteredAppointments.map(a => [
-      formatDateTime(a.appointmentDate),
-      a.patient.fullName,
-      a.patient.cpf,
-      a.destinationHospital,
-      a.treatmentType,
-      a.seatNumber,
-      a.isPriority ? 'Sim' : 'Não',
-      a.companion ? a.companion.fullName : 'Não'
-    ]);
-
-    const csvContent = [
-      headers.join(','),
-      ...rows.map(row => row.join(','))
-    ].join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `relatorio_agendamentos_${new Date().toISOString().split('T')[0]}.csv`;
-    link.click();
+  const handleDownloadPdf = () => {
+    if (!dateFrom) {
+      toast.error('Selecione uma data para gerar a lista de passageiros');
+      return;
+    }
+    downloadPassengerList(dateFrom);
   };
 
   return (
@@ -127,12 +110,15 @@ export default function ReportsPage() {
               />
             </div>
             <div className="flex items-end">
-              <Button onClick={exportToCSV} className="w-full">
-                <Download className="h-4 w-4 mr-2" />
-                Exportar CSV
+              <Button onClick={handleDownloadPdf} className="w-full">
+                <FileText className="h-4 w-4 mr-2" />
+                Gerar Lista de Passageiros (PDF)
               </Button>
             </div>
           </div>
+          <p className="text-sm text-muted-foreground mt-4">
+            * A lista de passageiros será gerada apenas para a <strong>Data Inicial</strong> selecionada
+          </p>
         </CardContent>
       </Card>
 
@@ -216,17 +202,23 @@ export default function ReportsPage() {
           <CardTitle>Top 5 Destinos Mais Frequentes</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {topDestinations.map(([hospital, count], index) => (
-              <div key={hospital} className="flex items-center justify-between">
-                <div className="flex items-center gap-4 flex-1">
-                  <span className="font-bold text-2xl text-muted-foreground w-8">#{index + 1}</span>
-                  <span className="font-medium">{hospital}</span>
+          {topDestinations.length === 0 ? (
+            <p className="text-center text-muted-foreground py-8">
+              Nenhum agendamento encontrado no período selecionado
+            </p>
+          ) : (
+            <div className="space-y-4">
+              {topDestinations.map(([hospital, count], index) => (
+                <div key={hospital} className="flex items-center justify-between">
+                  <div className="flex items-center gap-4 flex-1">
+                    <span className="font-bold text-2xl text-muted-foreground w-8">#{index + 1}</span>
+                    <span className="font-medium">{hospital}</span>
+                  </div>
+                  <span className="font-bold">{count} agendamentos</span>
                 </div>
-                <span className="font-bold">{count} agendamentos</span>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

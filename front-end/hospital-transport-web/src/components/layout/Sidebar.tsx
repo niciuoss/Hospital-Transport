@@ -2,24 +2,31 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
 import { cn } from '@/lib/utils';
-import { Home, Users, Calendar, UserCog, FileText } from 'lucide-react';
+import { Home, Users, Calendar, UserCog, FileText, Settings } from 'lucide-react';
 
 const menuItems = [
-  { icon: Home, label: 'Dashboard', href: '/dashboard' },
-  { icon: Users, label: 'Pacientes', href: '/patients' },
-  { icon: Calendar, label: 'Agendamentos', href: '/appointments' },
-  { icon: UserCog, label: 'Usuários', href: '/users' },
-  { icon: FileText, label: 'Relatórios', href: '/reports' },
+  { icon: Home, label: 'Dashboard', href: '/dashboard', adminOnly: false },
+  { icon: Users, label: 'Pacientes', href: '/patients', adminOnly: false },
+  { icon: Calendar, label: 'Agendamentos', href: '/appointments', adminOnly: false },
+  { icon: UserCog, label: 'Usuários', href: '/users', adminOnly: false },
+  { icon: FileText, label: 'Relatórios', href: '/reports', adminOnly: false },
+  { icon: Settings, label: 'Administração', href: '/admin', adminOnly: true },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
+  const { user } = useAuth();
+
+  const visibleItems = menuItems.filter(item => 
+    !item.adminOnly || (user && JSON.parse(localStorage.getItem('user') || '{}').role === 'Admin')
+  );
 
   return (
     <aside className="w-64 border-r bg-background h-[calc(100vh-4rem)]">
       <nav className="p-4 space-y-2">
-        {menuItems.map((item) => {
+        {visibleItems.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
           

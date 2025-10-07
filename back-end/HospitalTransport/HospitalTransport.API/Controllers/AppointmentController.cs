@@ -1,6 +1,9 @@
 ﻿using HospitalTransport.Application.DTOs.Appointment;
 using HospitalTransport.Application.Interfaces;
+using HospitalTransport.Infrastructure.Services;
 using Microsoft.AspNetCore.Mvc;
+using HospitalTransport.Domain.Interfaces;
+using HospitalTransport.Infrastructure.Repositories;
 
 namespace HospitalTransport.API.Controllers
 {
@@ -9,10 +12,14 @@ namespace HospitalTransport.API.Controllers
     public class AppointmentsController : ControllerBase
     {
         private readonly IAppointmentService _appointmentService;
+        private readonly IPdfService _pdfService;
+        private readonly IUnitOfWork _unitOfWork;
 
-        public AppointmentsController(IAppointmentService appointmentService)
+        public AppointmentsController(IAppointmentService appointmentService, IPdfService pdfService, IUnitOfWork unitOfWork)
         {
             _appointmentService = appointmentService;
+            _pdfService = pdfService;
+            _unitOfWork = unitOfWork;
         }
 
         [HttpPost]
@@ -108,17 +115,39 @@ namespace HospitalTransport.API.Controllers
             return File(result.Data!, "application/pdf", $"passagem_{id}.pdf");
         }
 
+        [HttpGet("passenger-list-pdf")]
+        public async Task<IActionResult> GeneratePassengerListPdf([FromQuery] DateTime date)
+        {
+            try
+            {
+                var appointments = await _unitOfWork.Appointments.GetAppointmentsByDateAsync(date);
+
+                if (!appointments.Any())
+                {
+                    return NotFound(new { success = false, message = "Nenhum agendamento encontrado para esta data" });
+                }
+
+                var pdfBytes = _pdfService.GeneratePassengerListPdf(appointments.ToList(), date);
+
+                return File(pdfBytes, "application/pdf", $"lista_passageiros_{date:yyyy-MM-dd}.pdf");
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { success = false, message = $"Erro ao gerar PDF: {ex.Message}" });
+            }
+        }
+
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteAppointment(Guid id)
         {
-            var appointment = await _appointmentService.GetAppointmentByIdAsync(id);
+            var result = await _appointmentService.DeleteAppointmentAsync(id);
 
-            if (!appointment.Success)
+            if (!result.Success)
             {
-                return NotFound(appointment);
+                return BadRequest(result);
             }
 
-            return NoContent();
+            return Ok(result);
         }
     }
 }

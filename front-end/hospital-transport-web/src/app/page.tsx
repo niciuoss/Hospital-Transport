@@ -35,7 +35,7 @@ export default function HomePage() {
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
         <div className="container mx-auto px-4 py-16">
           <div className="text-center mb-16">
-            <h1 className="text-5xl font-bold text-primary mb-4">Hospital Transport</h1>
+            <h1 className="text-5xl font-bold text-primary mb-4">SATH</h1>
             <p className="text-xl text-muted-foreground mb-8">
               Sistema de Agendamento de Transporte Hospitalar
             </p>

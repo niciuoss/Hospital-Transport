@@ -15,5 +15,6 @@ namespace HospitalTransport.Application.Interfaces
         Task<BaseResponse<IEnumerable<SeatAvailabilityResponse>>> GetSeatAvailabilityAsync(DateTime date, bool isPriority);
         Task<BaseResponse<IEnumerable<AppointmentResponse>>> SearchAppointmentsAsync(string searchTerm);
         Task<BaseResponse<byte[]>> GenerateTicketPdfAsync(Guid appointmentId);
+        Task<BaseResponse<bool>> DeleteAppointmentAsync(Guid id);
     }
 }

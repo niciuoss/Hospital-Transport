@@ -10,5 +10,6 @@ namespace HospitalTransport.Application.Interfaces
     public interface IPdfService
     {
         byte[] GenerateAppointmentTicket(Appointment appointment);
+        byte[] GeneratePassengerListPdf(List<Appointment> appointments, DateTime date);
     }
 }
