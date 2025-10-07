@@ -11,7 +11,7 @@ namespace HospitalTransport.Domain.Entities
         public string FullName { get; set; } = string.Empty;
         public string Username { get; set; } = string.Empty;
         public string PasswordHash { get; set; } = string.Empty;
-        public string Role { get; set; } = "Employee";
+        public string Role { get; set; } = "AssistenteSocial";
 
         public ICollection<Appointment> CreatedAppointments { get; set; } = new List<Appointment>();
     }

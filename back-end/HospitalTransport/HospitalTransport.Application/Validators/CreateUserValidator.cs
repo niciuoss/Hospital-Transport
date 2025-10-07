@@ -29,8 +29,8 @@ namespace HospitalTransport.Application.Validators
 
             RuleFor(x => x.Role)
                 .NotEmpty().WithMessage("Função é obrigatória")
-                .Must(role => role == "Admin" || role == "Employee")
-                .WithMessage("Função deve ser 'Admin' ou 'Employee'");
+                .Must(role => role == "Admin" || role == "AssistenteSocial")
+                .WithMessage("Função deve ser 'Admin' ou 'AssistenteSocial'");
         }
     }
 }

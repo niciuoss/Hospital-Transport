@@ -61,7 +61,7 @@ export default function UsersPage() {
                 <div className="flex justify-between items-start">
                   <CardTitle className="text-lg">{user.fullName}</CardTitle>
                   <Badge variant={user.role === 'Admin' ? 'default' : 'secondary'}>
-                    {user.role}
+                    {user.role === 'Admin' ? 'Administrador' : 'Assistente Social'}
                   </Badge>
                 </div>
               </CardHeader>

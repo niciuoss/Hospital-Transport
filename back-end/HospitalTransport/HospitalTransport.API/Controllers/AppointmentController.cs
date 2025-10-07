@@ -107,5 +107,18 @@ namespace HospitalTransport.API.Controllers
 
             return File(result.Data!, "application/pdf", $"passagem_{id}.pdf");
         }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteAppointment(Guid id)
+        {
+            var appointment = await _appointmentService.GetAppointmentByIdAsync(id);
+
+            if (!appointment.Success)
+            {
+                return NotFound(appointment);
+            }
+
+            return NoContent();
+        }
     }
 }

@@ -83,12 +83,30 @@ export function useAppointments() {
     }
   };
 
+  const deleteAppointment = async (id: string): Promise<boolean> => {
+    try {
+      setLoading(true);
+      const response = await api.delete(`/appointments/${id}`);
+      if (response.status === 200 || response.status === 204) {
+        toast.success('Agendamento cancelado com sucesso!');
+        return true;
+      }
+      return false;
+    } catch (error: any) {
+      toast.error('Erro ao cancelar agendamento');
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return { 
     loading, 
     getAppointments, 
     getRecentAppointments, 
     getSeatAvailability, 
     createAppointment,
-    downloadTicket 
+    downloadTicket,
+    deleteAppointment
   };
 }

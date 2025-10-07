@@ -20,7 +20,7 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
     username: '',
     password: '',
     confirmPassword: '',
-    role: 'Employee',
+    role: 'AssistenteSocial',
   });
 
   useEffect(() => {
@@ -120,7 +120,7 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Employee">Funcionário</SelectItem>
+                  <SelectItem value="AssistenteSocial">Assistente Social</SelectItem>
                   <SelectItem value="Admin">Administrador</SelectItem>
                 </SelectContent>
               </Select>

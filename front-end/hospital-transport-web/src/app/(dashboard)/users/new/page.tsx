@@ -19,7 +19,7 @@ export default function NewUserPage() {
     username: '',
     password: '',
     confirmPassword: '',
-    role: 'Employee',
+    role: 'AssistenteSocial',
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -104,10 +104,10 @@ export default function NewUserPage() {
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Employee">Funcionário</SelectItem>
-                  <SelectItem value="Admin">Administrador</SelectItem>
-                </SelectContent>
+                  <SelectContent>
+                    <SelectItem value="AssistenteSocial">Assistente Social</SelectItem>
+                    <SelectItem value="Admin">Administrador</SelectItem>
+                  </SelectContent>
               </Select>
             </div>
 
