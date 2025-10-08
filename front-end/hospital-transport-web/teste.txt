@@ -1,4 +1,4 @@
-﻿using HospitalTransport.Domain.Enums;
+using HospitalTransport.Domain.Enums;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,6 +8,7 @@ using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
 using System.IO;
+using System.Reflection; // Necessário caso queira tentar a Solução 2 novamente
 
 namespace HospitalTransport.Infrastructure.Services
 {
@@ -25,8 +26,9 @@ namespace HospitalTransport.Infrastructure.Services
                 container.Page(page =>
                 {
                     page.Size(PageSizes.A4.Landscape());
-                    page.MarginVertical(0.5f, Unit.Centimetre);
-                    page.MarginHorizontal(1, Unit.Centimetre);
+
+                    // CORREÇÃO APLICADA AQUI
+                    page.Margin(1, 0.5f, Unit.Centimetre); // 1cm horizontal, 0.5cm vertical
 
                     page.PageColor(Colors.White);
                     page.DefaultTextStyle(x => x.FontSize(10).FontFamily("Arial"));
@@ -45,6 +47,7 @@ namespace HospitalTransport.Infrastructure.Services
 
         private void ComposeHeader(IContainer container)
         {
+            // Usando a Solução 1 (arquivo na pasta do projeto API)
             var imagePath = "capa.png";
             if (File.Exists(imagePath))
             {
@@ -56,6 +59,7 @@ namespace HospitalTransport.Infrastructure.Services
         {
             container.Column(column =>
             {
+                // AJUSTE 2: Reduzido o espaçamento geral entre os itens de 12 para 8
                 column.Spacing(8);
 
                 column.Item().Element(ComposeHeader);
@@ -86,6 +90,7 @@ namespace HospitalTransport.Infrastructure.Services
                     .PaddingVertical(5)
                     .Column(col =>
                     {
+                        // AJUSTE 3: Reduzido o espaçamento interno do box da poltrona
                         col.Spacing(2);
                         col.Item().AlignCenter().Text("SUA POLTRONA").FontSize(12).SemiBold();
                         col.Item().AlignCenter().Text(appointment.SeatNumber.ToString("D2"))
@@ -109,6 +114,7 @@ namespace HospitalTransport.Infrastructure.Services
         
         private void ComposeDataSection(ColumnDescriptor column, string title, List<(string label, string value)> items)
         {
+            // AJUSTE 4: Removido o PaddingTop que havia antes do título da seção
             column.Item().Text(title).SemiBold().FontSize(11);
             column.Item().Grid(grid =>
             {
@@ -132,7 +138,7 @@ namespace HospitalTransport.Infrastructure.Services
                     col.Item().PaddingTop(2).Text("• Apresente este comprovante no dia da viagem;").FontSize(9);
                     col.Item().Text("• Chegue com 30 minutos de antecedência;").FontSize(9);
                     col.Item().Text("• Traga documento de identificação com foto;").FontSize(9);
-                    col.Item().Text("• Em caso de imprevistos, entre em contato com o hospital pelo telefone (88) 9 8193-9906.").FontSize(9);
+                    col.Item().Text("• Em caso de imprevistos, entre em contato com o hospital.").FontSize(9);
                 });
         }
 
@@ -140,6 +146,7 @@ namespace HospitalTransport.Infrastructure.Services
         
         public byte[] GeneratePassengerListPdf(List<Appointment> appointments, DateTime date)
         {
+            // ... seu código original, sem modificações ...
             var document = Document.Create(container =>
             {
                 container.Page(page =>
@@ -168,6 +175,8 @@ namespace HospitalTransport.Infrastructure.Services
                     page.Content().Column(column =>
                     {
                         column.Spacing(10);
+
+                        // ... o resto do seu método original ...
                         column.Item().Row(row =>
                         {
                             row.RelativeItem().Text($"Total de Passageiros: {CountTotalPassengers(appointments)}")

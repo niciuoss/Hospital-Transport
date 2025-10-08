@@ -18,7 +18,10 @@ namespace HospitalTransport.Application.Validators
 
             RuleFor(x => x.RG)
                 .NotEmpty().WithMessage("RG é obrigatório")
-                .MaximumLength(20).WithMessage("RG inválido");
+                .Must(numero =>
+                    (numero.Length >= 5 && numero.Length <= 20) || 
+                    (numero.Length == 11) 
+                ).WithMessage("RG deve ter formato válido (antigo) ou 11 dígitos (novo CPF)");
 
             RuleFor(x => x.CPF)
                 .NotEmpty().WithMessage("CPF é obrigatório")
