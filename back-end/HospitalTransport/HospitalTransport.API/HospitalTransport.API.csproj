@@ -27,4 +27,10 @@
     <ProjectReference Include="..\HospitalTransport.Infrastructure\HospitalTransport.Infrastructure.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="capa.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>
