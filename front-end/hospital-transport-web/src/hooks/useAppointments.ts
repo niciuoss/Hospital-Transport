@@ -68,7 +68,7 @@ export function useAppointments() {
       const response = await api.get(`/appointments/${appointmentId}/ticket`, {
         responseType: 'blob'
       });
-      
+
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
@@ -76,7 +76,7 @@ export function useAppointments() {
       document.body.appendChild(link);
       link.click();
       link.remove();
-      
+
       toast.success('PDF baixado com sucesso!');
     } catch (error: any) {
       toast.error('Erro ao baixar PDF');
@@ -101,34 +101,56 @@ export function useAppointments() {
   };
 
   const downloadPassengerList = async (date: string) => {
-  try {
-    const response = await api.get('/appointments/passenger-list-pdf', {
-      params: { date },
-      responseType: 'blob'
-    });
-    
-    const url = window.URL.createObjectURL(new Blob([response.data]));
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `lista_passageiros_${date}.pdf`);
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    
-    toast.success('Lista de passageiros baixada com sucesso!');
-  } catch (error: any) {
-    toast.error(error.response?.data?.message || 'Erro ao baixar lista de passageiros');
-  }
-};
+    try {
+      const response = await api.get('/appointments/passenger-list-pdf', {
+        params: { date },
+        responseType: 'blob'
+      });
 
-  return { 
-    loading, 
-    getAppointments, 
-    getRecentAppointments, 
-    getSeatAvailability, 
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `lista_passageiros_${date}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+
+      toast.success('Lista de passageiros baixada com sucesso!');
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Erro ao baixar lista de passageiros');
+    }
+  };
+
+  const downloadAnnualReport = async (year: number) => {
+    try {
+      const response = await api.get('/appointments/annual-report-pdf', {
+        params: { year },
+        responseType: 'blob'
+      });
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `relatorio_anual_${year}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+
+      toast.success('Relatório anual baixado com sucesso!');
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Erro ao baixar relatório anual');
+    }
+  };
+
+  return {
+    loading,
+    getAppointments,
+    getRecentAppointments,
+    getSeatAvailability,
     createAppointment,
     downloadTicket,
     deleteAppointment,
-    downloadPassengerList
+    downloadPassengerList,
+    downloadAnnualReport
   };
 }

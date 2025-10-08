@@ -1,23 +1,27 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { useAppointments } from '@/hooks/useAppointments';
-import { usePatients } from '@/hooks/usePatients';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { FileText, Calendar, Users, TrendingUp } from 'lucide-react';
-import { Appointment } from '@/types/appointment';
-import { toast } from 'sonner';
+import { useEffect, useState } from "react";
+import { useAppointments } from "@/hooks/useAppointments";
+import { usePatients } from "@/hooks/usePatients";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { FileText, Calendar, Users, TrendingUp } from "lucide-react";
+import { Appointment } from "@/types/appointment";
+import { toast } from "sonner";
 
 export default function ReportsPage() {
-  const { getAppointments, downloadPassengerList } = useAppointments();
+  const { getAppointments, downloadPassengerList, downloadAnnualReport } =
+    useAppointments();
   const { getPatients } = usePatients();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
-  const [filteredAppointments, setFilteredAppointments] = useState<Appointment[]>([]);
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [filteredAppointments, setFilteredAppointments] = useState<
+    Appointment[]
+  >([]);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
   useEffect(() => {
     loadData();
@@ -36,14 +40,14 @@ export default function ReportsPage() {
     let filtered = [...appointments];
 
     if (dateFrom) {
-      filtered = filtered.filter(a => 
-        new Date(a.appointmentDate) >= new Date(dateFrom)
+      filtered = filtered.filter(
+        (a) => new Date(a.appointmentDate) >= new Date(dateFrom)
       );
     }
 
     if (dateTo) {
-      filtered = filtered.filter(a => 
-        new Date(a.appointmentDate) <= new Date(dateTo + 'T23:59:59')
+      filtered = filtered.filter(
+        (a) => new Date(a.appointmentDate) <= new Date(dateTo + "T23:59:59")
       );
     }
 
@@ -52,19 +56,25 @@ export default function ReportsPage() {
 
   const stats = {
     total: filteredAppointments.length,
-    priority: filteredAppointments.filter(a => a.isPriority).length,
-    withCompanion: filteredAppointments.filter(a => a.companion).length,
+    priority: filteredAppointments.filter((a) => a.isPriority).length,
+    withCompanion: filteredAppointments.filter((a) => a.companion).length,
     byTreatment: {
-      Semanal: filteredAppointments.filter(a => a.treatmentType === 'Semanal').length,
-      Mensal: filteredAppointments.filter(a => a.treatmentType === 'Mensal').length,
-      Trimestral: filteredAppointments.filter(a => a.treatmentType === 'Trimestral').length,
-      Outro: filteredAppointments.filter(a => a.treatmentType === 'Outro').length,
+      Semanal: filteredAppointments.filter((a) => a.treatmentType === "Semanal")
+        .length,
+      Mensal: filteredAppointments.filter((a) => a.treatmentType === "Mensal")
+        .length,
+      Trimestral: filteredAppointments.filter(
+        (a) => a.treatmentType === "Trimestral"
+      ).length,
+      Outro: filteredAppointments.filter((a) => a.treatmentType === "Outro")
+        .length,
     },
-    byDestination: {} as Record<string, number>
+    byDestination: {} as Record<string, number>,
   };
 
-  filteredAppointments.forEach(a => {
-    stats.byDestination[a.destinationHospital] = (stats.byDestination[a.destinationHospital] || 0) + 1;
+  filteredAppointments.forEach((a) => {
+    stats.byDestination[a.destinationHospital] =
+      (stats.byDestination[a.destinationHospital] || 0) + 1;
   });
 
   const topDestinations = Object.entries(stats.byDestination)
@@ -73,17 +83,28 @@ export default function ReportsPage() {
 
   const handleDownloadPdf = () => {
     if (!dateFrom) {
-      toast.error('Selecione uma data para gerar a lista de passageiros');
+      toast.error("Selecione uma data para gerar a lista de passageiros");
       return;
     }
     downloadPassengerList(dateFrom);
   };
 
+  const handleDownloadAnnualReport = () => {
+    downloadAnnualReport(selectedYear);
+  };
+
+  const years = Array.from(
+    { length: 10 },
+    (_, i) => new Date().getFullYear() - i
+  );
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Relatórios</h1>
-        <p className="text-muted-foreground">Análise e estatísticas dos agendamentos</p>
+        <p className="text-muted-foreground">
+          Análise e estatísticas dos agendamentos
+        </p>
       </div>
 
       {/* Filtro de Período */}
@@ -117,7 +138,41 @@ export default function ReportsPage() {
             </div>
           </div>
           <p className="text-sm text-muted-foreground mt-4">
-            * A lista de passageiros será gerada apenas para a <strong>Data Inicial</strong> selecionada
+            * A lista de passageiros será gerada apenas para a{" "}
+            <strong>Data Inicial</strong> selecionada
+          </p>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle>Relatório Anual</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label>Selecione o Ano</Label>
+              <select
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                {years.map((year) => (
+                  <option key={year} value={year}>
+                    {year}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex items-end">
+              <Button onClick={handleDownloadAnnualReport} className="w-full">
+                <FileText className="h-4 w-4 mr-2" />
+                Baixar Relatório Anual (PDF)
+              </Button>
+            </div>
+          </div>
+          <p className="text-sm text-muted-foreground mt-4">
+            O relatório anual contém estatísticas gerais, viagens por mês, tipos
+            de tratamento e destinos mais frequentes.
           </p>
         </CardContent>
       </Card>
@@ -126,7 +181,9 @@ export default function ReportsPage() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total de Agendamentos</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Total de Agendamentos
+            </CardTitle>
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -142,31 +199,43 @@ export default function ReportsPage() {
           <CardContent>
             <div className="text-2xl font-bold">{stats.priority}</div>
             <p className="text-xs text-muted-foreground">
-              {stats.total > 0 ? ((stats.priority / stats.total) * 100).toFixed(1) : 0}% do total
+              {stats.total > 0
+                ? ((stats.priority / stats.total) * 100).toFixed(1)
+                : 0}
+              % do total
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Com Acompanhante</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Com Acompanhante
+            </CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.withCompanion}</div>
             <p className="text-xs text-muted-foreground">
-              {stats.total > 0 ? ((stats.withCompanion / stats.total) * 100).toFixed(1) : 0}% do total
+              {stats.total > 0
+                ? ((stats.withCompanion / stats.total) * 100).toFixed(1)
+                : 0}
+              % do total
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Destinos Únicos</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Destinos Únicos
+            </CardTitle>
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{Object.keys(stats.byDestination).length}</div>
+            <div className="text-2xl font-bold">
+              {Object.keys(stats.byDestination).length}
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -185,7 +254,12 @@ export default function ReportsPage() {
                   <div className="flex-1 bg-muted rounded-full h-2">
                     <div
                       className="bg-primary h-2 rounded-full transition-all"
-                      style={{ width: stats.total > 0 ? `${(count / stats.total) * 100}%` : '0%' }}
+                      style={{
+                        width:
+                          stats.total > 0
+                            ? `${(count / stats.total) * 100}%`
+                            : "0%",
+                      }}
                     />
                   </div>
                 </div>
@@ -209,9 +283,14 @@ export default function ReportsPage() {
           ) : (
             <div className="space-y-4">
               {topDestinations.map(([hospital, count], index) => (
-                <div key={hospital} className="flex items-center justify-between">
+                <div
+                  key={hospital}
+                  className="flex items-center justify-between"
+                >
                   <div className="flex items-center gap-4 flex-1">
-                    <span className="font-bold text-2xl text-muted-foreground w-8">#{index + 1}</span>
+                    <span className="font-bold text-2xl text-muted-foreground w-8">
+                      #{index + 1}
+                    </span>
                     <span className="font-medium">{hospital}</span>
                   </div>
                   <span className="font-bold">{count} agendamentos</span>

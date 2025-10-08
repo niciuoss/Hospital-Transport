@@ -11,5 +11,6 @@ namespace HospitalTransport.Domain.Interfaces
         Task<IEnumerable<Appointment>> GetAppointmentsByDateAsync(DateTime date);
         Task<IEnumerable<int>> GetOccupiedSeatsAsync(DateTime date);
         Task<IEnumerable<Appointment>> SearchAppointmentsAsync(string searchTerm);
+        Task<IEnumerable<Appointment>> GetAppointmentsByYearAsync(int year);
     }
 }

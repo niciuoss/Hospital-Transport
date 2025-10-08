@@ -31,7 +31,8 @@ namespace HospitalTransport.Application.Validators
 
             RuleFor(x => x.SeatNumber)
                 .GreaterThan(0).WithMessage("Número da poltrona inválido")
-                .LessThanOrEqualTo(46).WithMessage("Número da poltrona não existe");
+                .LessThanOrEqualTo(48).WithMessage("Número da poltrona não existe")
+                .NotEqual(4).WithMessage("A poltrona 4 não existe neste ônibus");
 
             RuleFor(x => x.AppointmentDate)
                 .NotEmpty().WithMessage("Data do agendamento é obrigatória")

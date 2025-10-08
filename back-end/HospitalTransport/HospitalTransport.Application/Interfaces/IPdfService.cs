@@ -11,5 +11,6 @@ namespace HospitalTransport.Application.Interfaces
     {
         byte[] GenerateAppointmentTicket(Appointment appointment);
         byte[] GeneratePassengerListPdf(List<Appointment> appointments, DateTime date);
+        byte[] GenerateAnnualReportPdf(List<Appointment> appointments, int year);
     }
 }

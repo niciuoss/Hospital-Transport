@@ -24,7 +24,7 @@ export function Sidebar() {
   );
 
   return (
-    <aside className="w-64 border-r bg-background h-[calc(100vh-4rem)]">
+    <aside className="w-64 border-r bg-background sticky top-0 h-screen overflow-y-auto">
       <nav className="p-4 space-y-2">
         {visibleItems.map((item) => {
           const Icon = item.icon;

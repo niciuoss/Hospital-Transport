@@ -52,11 +52,20 @@ namespace HospitalTransport.Application.Services
                     return BaseResponse<AppointmentResponse>.FailureResponse("Poltrona já está ocupada");
                 }
 
-                // Verificar restrição de prioridade (poltronas 1, 2, 3)
-                if (!request.IsPriority && request.SeatNumber <= 3)
+                var prioritySeats = new List<int> { 1, 2, 3, 5, 19, 20 };
+
+                if (!request.IsPriority && prioritySeats.Contains(request.SeatNumber))
                 {
                     return BaseResponse<AppointmentResponse>.FailureResponse(
-                        "Poltronas 1, 2 e 3 são exclusivas para pacientes prioritários"
+                        "Poltronas 1, 2, 3, 5, 19 e 20 são exclusivas para pacientes prioritários"
+                    );
+                }
+
+                // Verificar se está tentando usar a poltrona 4 (não existe)
+                if (request.SeatNumber == 4)
+                {
+                    return BaseResponse<AppointmentResponse>.FailureResponse(
+                        "A poltrona 4 não existe no ônibus"
                     );
                 }
 
@@ -217,17 +226,26 @@ namespace HospitalTransport.Application.Services
         }
 
         public async Task<BaseResponse<IEnumerable<SeatAvailabilityResponse>>> GetSeatAvailabilityAsync(
-            DateTime date,
-            bool isPriority)
+    DateTime date,
+    bool isPriority)
         {
             try
             {
                 var occupiedSeats = await _unitOfWork.Appointments.GetOccupiedSeatsAsync(date);
                 var seatAvailability = new List<SeatAvailabilityResponse>();
 
-                for (int i = 1; i <= 46; i++)
+                // Lista de poltronas prioritárias
+                var prioritySeats = new List<int> { 1, 2, 3, 5, 19, 20 };
+
+                for (int i = 1; i <= 48; i++)
                 {
-                    bool isPriorityOnly = i <= 3;
+                    // Poltrona 4 não existe
+                    if (i == 4)
+                    {
+                        continue;
+                    }
+
+                    bool isPriorityOnly = prioritySeats.Contains(i);
                     bool isOccupied = occupiedSeats.Contains(i);
                     bool isAvailable = !isOccupied && (isPriority || !isPriorityOnly);
 

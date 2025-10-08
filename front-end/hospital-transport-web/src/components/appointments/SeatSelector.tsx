@@ -31,13 +31,21 @@ export function SeatSelector({ seats, selectedSeat, onSelectSeat, isPriority }: 
     return 'Disponível';
   };
 
-  // Poltronas em fileiras
-  const rows = [
-    seats.slice(0, 11),  // Fileira 1: 3-43
-    seats.slice(11, 22), // Fileira 2: 4-44
-    seats.slice(22, 34), // Fileira 3: 2-46
-    seats.slice(34, 46), // Fileira 4: 1-45
+  // Organização das poltronas conforme o layout real do ônibus
+  const layout = [
+    // Fileira 1 (lado esquerdo) - Ímpares da frente
+    [3, 7, 11, 15, 19, 23, 27, 31, 35, 39, 43, 47],
+    // Fileira 2 (lado esquerdo-meio) - Pares da frente exceto 4
+    [8, 12, 16, 20, 24, 28, 32, 36, 40, 44, 48],
+    // Fileira 3 (lado direito-meio) - Pares de trás
+    [2, 6, 10, 14, 18, 22, 26, 30, 34, 38, 42, 46],
+    // Fileira 4 (lado direito) - Ímpares de trás
+    [1, 5, 9, 13, 17, 21, 25, 29, 33, 37, 41, 45],
   ];
+
+  const getSeatByNumber = (seatNumber: number) => {
+    return seats.find(s => s.seatNumber === seatNumber);
+  };
 
   return (
     <div className="space-y-6">
@@ -64,15 +72,45 @@ export function SeatSelector({ seats, selectedSeat, onSelectSeat, isPriority }: 
       </div>
 
       {/* Layout do ônibus */}
-      <div className="max-w-4xl mx-auto bg-gray-50 p-6 rounded-lg border-2">
+      <div className="max-w-5xl mx-auto bg-gray-50 dark:bg-gray-900 p-6 rounded-lg border-2">
         <div className="text-center mb-4 font-bold">FRENTE DO ÔNIBUS</div>
         
         <div className="space-y-3">
-          {rows.map((row, rowIndex) => (
+          {layout.map((row, rowIndex) => (
             <div key={rowIndex} className="flex gap-2 justify-center">
-              {row.map((seat) => (
+              {row.map((seatNumber) => {
+                const seat = getSeatByNumber(seatNumber);
+                if (!seat) return null;
+
+                return (
+                  <button
+                    key={seat.seatNumber}
+                    onClick={() => seat.isAvailable && !(seat.isPriorityOnly && !isPriority) && onSelectSeat(seat.seatNumber)}
+                    disabled={!seat.isAvailable || (seat.isPriorityOnly && !isPriority)}
+                    className={cn(
+                      'w-12 h-12 rounded border-2 font-bold text-sm transition-all',
+                      getSeatColor(seat)
+                    )}
+                    title={getSeatLabel(seat)}
+                  >
+                    {seat.seatNumber}
+                  </button>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+
+        {/* Poltrona 3 separada */}
+        <div className="mt-4 pt-4 border-t-2 border-dashed">
+          <div className="text-center text-sm text-muted-foreground mb-2">Poltrona Isolada</div>
+          <div className="flex justify-center">
+            {(() => {
+              const seat = getSeatByNumber(3);
+              if (!seat) return null;
+
+              return (
                 <button
-                  key={seat.seatNumber}
                   onClick={() => seat.isAvailable && !(seat.isPriorityOnly && !isPriority) && onSelectSeat(seat.seatNumber)}
                   disabled={!seat.isAvailable || (seat.isPriorityOnly && !isPriority)}
                   className={cn(
@@ -83,14 +121,14 @@ export function SeatSelector({ seats, selectedSeat, onSelectSeat, isPriority }: 
                 >
                   {seat.seatNumber}
                 </button>
-              ))}
-            </div>
-          ))}
+              );
+            })()}
+          </div>
         </div>
       </div>
 
       {selectedSeat && (
-        <div className="text-center p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+        <div className="text-center p-4 bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800 rounded-lg">
           <p className="font-bold text-lg">Poltrona Selecionada: {selectedSeat}</p>
         </div>
       )}

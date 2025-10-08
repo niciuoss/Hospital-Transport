@@ -137,6 +137,33 @@ namespace HospitalTransport.API.Controllers
             }
         }
 
+        [HttpGet("annual-report-pdf")]
+        public async Task<IActionResult> GenerateAnnualReportPdf([FromQuery] int year)
+        {
+            try
+            {
+                if (year < 2000 || year > DateTime.Now.Year)
+                {
+                    return BadRequest(new { success = false, message = "Ano inválido" });
+                }
+
+                var appointments = await _unitOfWork.Appointments.GetAppointmentsByYearAsync(year);
+
+                if (!appointments.Any())
+                {
+                    return NotFound(new { success = false, message = "Nenhum agendamento encontrado para este ano" });
+                }
+
+                var pdfBytes = _pdfService.GenerateAnnualReportPdf(appointments.ToList(), year);
+
+                return File(pdfBytes, "application/pdf", $"relatorio_anual_{year}.pdf");
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { success = false, message = $"Erro ao gerar relatório: {ex.Message}" });
+            }
+        }
+
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteAppointment(Guid id)
         {

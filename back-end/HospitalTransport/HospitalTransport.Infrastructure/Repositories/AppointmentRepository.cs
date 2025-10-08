@@ -91,5 +91,21 @@ namespace HospitalTransport.Infrastructure.Repositories
                 .Take(50)
                 .ToListAsync();
         }
+
+        public async Task<IEnumerable<Appointment>> GetAppointmentsByYearAsync(int year)
+        {
+            var startDate = new DateTime(year, 1, 1);
+            var endDate = new DateTime(year, 12, 31, 23, 59, 59);
+
+            return await _dbSet
+                .Include(a => a.Patient)
+                .Include(a => a.Companion)
+                .Include(a => a.CreatedByUser)
+                .Where(a => a.IsActive &&
+                    a.AppointmentDate >= startDate &&
+                    a.AppointmentDate <= endDate)
+                .OrderBy(a => a.AppointmentDate)
+                .ToListAsync();
+        }
     }
 }

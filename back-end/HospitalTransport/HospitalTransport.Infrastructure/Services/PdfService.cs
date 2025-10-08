@@ -25,11 +25,13 @@ namespace HospitalTransport.Infrastructure.Services
                 container.Page(page =>
                 {
                     page.Size(PageSizes.A4.Landscape());
+
                     page.MarginVertical(0.5f, Unit.Centimetre);
                     page.MarginHorizontal(1, Unit.Centimetre);
 
                     page.PageColor(Colors.White);
-                    page.DefaultTextStyle(x => x.FontSize(10).FontFamily("Arial"));
+
+                    page.DefaultTextStyle(x => x.FontSize(9).FontFamily("Arial"));
 
                     page.Content().Row(row =>
                     {
@@ -56,7 +58,7 @@ namespace HospitalTransport.Infrastructure.Services
         {
             container.Column(column =>
             {
-                column.Spacing(8);
+                column.Spacing(6);
 
                 column.Item().Element(ComposeHeader);
                 
@@ -79,11 +81,11 @@ namespace HospitalTransport.Infrastructure.Services
                     ("Poltrona:", appointment.SeatNumber.ToString("D2"))
                 });
                 
-                column.Item()
+                column.Item().PaddingVertical(4, Unit.Millimetre)
                     .Border(1)
                     .BorderColor(Colors.Blue.Medium)
                     .Background(Colors.Blue.Lighten4)
-                    .PaddingVertical(5)
+                    .PaddingVertical(4)
                     .Column(col =>
                     {
                         col.Spacing(2);
@@ -104,9 +106,37 @@ namespace HospitalTransport.Infrastructure.Services
                 }
                 
                 column.Item().Element(ComposeInstructions);
+
+                //column.Item().Element(container => ComposeInstructions(container));
+
+                column.Item().PaddingTop(5).Element(c => ComposeTicketFooter(c, appointment));
             });
         }
-        
+
+        private void ComposeTicketFooter(IContainer container, Appointment appointment)
+        {
+            container.Column(column =>
+            {
+                column.Item().LineHorizontal(0.5f).LineColor(Colors.Grey.Lighten2);
+                column.Item().PaddingTop(2, Unit.Millimetre).Row(row =>
+                {
+                    row.RelativeItem().Text(text =>
+                    {
+                        text.DefaultTextStyle(x => x.FontSize(7).FontColor(Colors.Grey.Darken2));
+                        text.Span("Emitido por: ").SemiBold();
+                        text.Span(appointment.CreatedByUser.FullName);
+                    });
+
+                    row.RelativeItem().AlignRight().Text(text =>
+                    {
+                        text.DefaultTextStyle(x => x.FontSize(7).FontColor(Colors.Grey.Darken2));
+                        text.Span("Data/Hora: ").SemiBold();
+                        text.Span($"{appointment.CreatedAt:dd/MM/yyyy HH:mm}");
+                    });
+                });
+            });
+        }
+
         private void ComposeDataSection(ColumnDescriptor column, string title, List<(string label, string value)> items)
         {
             column.Item().Text(title).SemiBold().FontSize(11);
@@ -121,7 +151,7 @@ namespace HospitalTransport.Infrastructure.Services
                 }
             });
         }
-        
+
         private void ComposeInstructions(IContainer container)
         {
             container.Border(1).BorderColor(Colors.Grey.Lighten1)
@@ -268,6 +298,157 @@ namespace HospitalTransport.Infrastructure.Services
             return document.GeneratePdf();
         }
 
+        public byte[] GenerateAnnualReportPdf(List<Appointment> appointments, int year)
+        {
+            var document = Document.Create(container =>
+            {
+                container.Page(page =>
+                {
+                    page.Size(PageSizes.A4);
+                    page.Margin(2, Unit.Centimetre);
+                    page.PageColor(Colors.White);
+                    page.DefaultTextStyle(x => x.FontSize(11).FontFamily("Arial"));
+
+                    // Header
+                    page.Header().Column(column =>
+                    {
+                        column.Item().AlignCenter().Text("HOSPITAL MUNICIPAL")
+                            .FontSize(18).Bold().FontColor(Colors.Blue.Darken2);
+
+                        column.Item().AlignCenter().Text($"Relatório Anual - {year}")
+                            .FontSize(16).FontColor(Colors.Grey.Darken1);
+
+                        column.Item().AlignCenter().Text("Sistema de Transporte de Pacientes")
+                            .FontSize(12).FontColor(Colors.Grey.Darken1);
+
+                        column.Item().PaddingVertical(5).LineHorizontal(1).LineColor(Colors.Grey.Medium);
+                    });
+
+                    // Content
+                    page.Content().Column(column =>
+                    {
+                        column.Spacing(15);
+
+                        // Estatísticas Gerais
+                        column.Item().Element(container => DrawSection(container, "ESTATÍSTICAS GERAIS", () =>
+                        {
+                            var totalPassengers = appointments.Count + appointments.Count(a => a.Companion != null);
+                            return new List<(string label, string value)>
+                    {
+                        ("Total de Agendamentos:", appointments.Count.ToString()),
+                        ("Total de Passageiros:", totalPassengers.ToString()),
+                        ("Pacientes Prioritários:", appointments.Count(a => a.IsPriority).ToString()),
+                        ("Viagens com Acompanhante:", appointments.Count(a => a.Companion != null).ToString()),
+                        ("Destinos Únicos:", appointments.Select(a => a.DestinationHospital).Distinct().Count().ToString())
+                    };
+                        }));
+
+                        // Por Mês
+                        column.Item().Element(container =>
+                        {
+                            container.Border(1).BorderColor(Colors.Grey.Medium).Padding(10).Column(col =>
+                            {
+                                col.Item().Background(Colors.Grey.Lighten2).Padding(5)
+                                    .Text("VIAGENS POR MÊS").FontSize(12).Bold().FontColor(Colors.Blue.Darken2);
+
+                                col.Item().PaddingTop(10);
+
+                                var monthlyData = appointments
+                                    .GroupBy(a => a.AppointmentDate.Month)
+                                    .OrderBy(g => g.Key)
+                                    .Select(g => new { Month = g.Key, Count = g.Count() });
+
+                                foreach (var data in monthlyData)
+                                {
+                                    var monthName = new DateTime(year, data.Month, 1).ToString("MMMM", new System.Globalization.CultureInfo("pt-BR"));
+                                    col.Item().PaddingVertical(3).Row(row =>
+                                    {
+                                        row.ConstantItem(120).Text(monthName.ToUpper()).FontSize(10).Bold();
+                                        row.RelativeItem().Column(innerCol =>
+                                        {
+                                            innerCol.Item().Background(Colors.Blue.Lighten3).Height(8)
+                                                .Width((float)(data.Count * 200.0 / appointments.Count));
+                                        });
+                                        row.ConstantItem(60).AlignRight().Text(data.Count.ToString()).FontSize(10).Bold();
+                                    });
+                                }
+                            });
+                        });
+
+                        // Por Tipo de Tratamento
+                        column.Item().Element(container =>
+                        {
+                            container.Border(1).BorderColor(Colors.Grey.Medium).Padding(10).Column(col =>
+                            {
+                                col.Item().Background(Colors.Grey.Lighten2).Padding(5)
+                                    .Text("POR TIPO DE TRATAMENTO").FontSize(12).Bold().FontColor(Colors.Blue.Darken2);
+
+                                col.Item().PaddingTop(10);
+
+                                var treatmentData = appointments
+                                    .GroupBy(a => a.TreatmentType)
+                                    .OrderByDescending(g => g.Count())
+                                    .Select(g => new { Type = g.Key.ToString(), Count = g.Count() });
+
+                                foreach (var data in treatmentData)
+                                {
+                                    col.Item().PaddingVertical(3).Row(row =>
+                                    {
+                                        row.ConstantItem(120).Text(data.Type).FontSize(10).Bold();
+                                        row.RelativeItem().Column(innerCol =>
+                                        {
+                                            innerCol.Item().Background(Colors.Green.Lighten3).Height(8)
+                                                .Width((float)(data.Count * 200.0 / appointments.Count));
+                                        });
+                                        row.ConstantItem(60).AlignRight().Text(data.Count.ToString()).FontSize(10).Bold();
+                                    });
+                                }
+                            });
+                        });
+
+                        // Top 10 Destinos
+                        column.Item().Element(container =>
+                        {
+                            container.Border(1).BorderColor(Colors.Grey.Medium).Padding(10).Column(col =>
+                            {
+                                col.Item().Background(Colors.Grey.Lighten2).Padding(5)
+                                    .Text("TOP 10 DESTINOS MAIS FREQUENTES").FontSize(12).Bold().FontColor(Colors.Blue.Darken2);
+
+                                col.Item().PaddingTop(10);
+
+                                var destinationData = appointments
+                                    .GroupBy(a => a.DestinationHospital)
+                                    .OrderByDescending(g => g.Count())
+                                    .Take(10)
+                                    .Select((g, index) => new { Rank = index + 1, Hospital = g.Key, Count = g.Count() });
+
+                                foreach (var data in destinationData)
+                                {
+                                    col.Item().PaddingVertical(3).Row(row =>
+                                    {
+                                        row.ConstantItem(30).Text($"#{data.Rank}").FontSize(10).Bold().FontColor(Colors.Grey.Darken1);
+                                        row.RelativeItem().Text(data.Hospital).FontSize(10);
+                                        row.ConstantItem(60).AlignRight().Text(data.Count.ToString()).FontSize(10).Bold();
+                                    });
+                                }
+                            });
+                        });
+                    });
+
+                    // Footer
+                    page.Footer().Column(column =>
+                    {
+                        column.Item().PaddingTop(10).LineHorizontal(1).LineColor(Colors.Grey.Medium);
+
+                        column.Item().PaddingTop(5).AlignCenter().Text($"Gerado em: {DateTime.Now:dd/MM/yyyy HH:mm}")
+                            .FontSize(9).FontColor(Colors.Grey.Darken1);
+                    });
+                });
+            });
+
+            return document.GeneratePdf();
+        }
+
         private int CountTotalPassengers(List<Appointment> appointments)
         {
             return appointments.Count + appointments.Count(a => a.Companion != null);
@@ -279,6 +460,26 @@ namespace HospitalTransport.Infrastructure.Services
                 return cpf;
             
             return Convert.ToUInt64(cpf).ToString(@"000\.000\.000\-00");
+        }
+
+        private void DrawSection(IContainer container, string title, Func<List<(string label, string value)>> getItems)
+        {
+            container.Border(1).BorderColor(Colors.Grey.Medium).Padding(10).Column(column =>
+            {
+                column.Item().Background(Colors.Grey.Lighten2).Padding(5)
+                    .Text(title).FontSize(12).Bold().FontColor(Colors.Blue.Darken2);
+
+                column.Item().PaddingTop(10);
+
+                foreach (var item in getItems())
+                {
+                    column.Item().PaddingVertical(3).Row(row =>
+                    {
+                        row.ConstantItem(150).Text(item.label).FontSize(10).Bold();
+                        row.RelativeItem().Text(item.value).FontSize(10);
+                    });
+                }
+            });
         }
 
         private string GetTreatmentTypeDescription(Appointment appointment)
