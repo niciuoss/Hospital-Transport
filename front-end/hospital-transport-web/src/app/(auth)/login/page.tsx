@@ -62,8 +62,7 @@ export default function LoginPage() {
             </Button>
           </form>
           <div className="mt-4 text-center text-sm text-muted-foreground">
-            <p>Usuário padrão: admin</p>
-            <p>Senha padrão: admin123</p>
+            
           </div>
         </CardContent>
       </Card>
