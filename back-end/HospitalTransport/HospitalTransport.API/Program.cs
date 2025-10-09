@@ -53,6 +53,25 @@ builder.Services.AddScoped<IValidator<CreateUserRequest>, CreateUserValidator>()
 builder.Services.AddScoped<IValidator<ChangePasswordRequest>, ChangePasswordValidator>(); 
 var app = builder.Build();
 
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        var context = services.GetRequiredService<AppDbContext>();
+        var logger = services.GetRequiredService<ILogger<Program>>();
+
+        logger.LogInformation("Aplicando migrations...");
+        context.Database.Migrate();
+        logger.LogInformation("Migrations aplicadas com sucesso!");
+    }
+    catch (Exception ex)
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "Erro ao aplicar migrations");
+    }
+}
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
