@@ -24,39 +24,37 @@ namespace HospitalTransport.Application.Services
         {
             try
             {
-                var validationResult = await _createValidator.ValidateAsync(request);
-                if (!validationResult.IsValid)
+                // Verificar se CPF já existe - APENAS SE FOR PREENCHIDO
+                if (!string.IsNullOrWhiteSpace(request.CPF))
                 {
-                    return BaseResponse<PatientResponse>.FailureResponse(
-                        "Dados inválidos",
-                        validationResult.Errors.Select(e => e.ErrorMessage).ToList()
-                    );
+                    var existingPatient = await _unitOfWork.Patients.GetByCPFAsync(request.CPF);
+                    if (existingPatient != null)
+                    {
+                        return BaseResponse<PatientResponse>.FailureResponse("CPF já cadastrado no sistema");
+                    }
                 }
 
-                // Verificar se CPF já existe
-                var existingPatient = await _unitOfWork.Patients.GetByCPFAsync(request.CPF);
-                if (existingPatient != null)
+                // Verificar se cartão SUS já existe - APENAS SE FOR PREENCHIDO
+                if (!string.IsNullOrWhiteSpace(request.SusCardNumber))
                 {
-                    return BaseResponse<PatientResponse>.FailureResponse("CPF já cadastrado no sistema");
-                }
-
-                // Verificar se cartão SUS já existe
-                existingPatient = await _unitOfWork.Patients.GetBySusCardAsync(request.SusCardNumber);
-                if (existingPatient != null)
-                {
-                    return BaseResponse<PatientResponse>.FailureResponse("Cartão SUS já cadastrado no sistema");
+                    var existingPatient = await _unitOfWork.Patients.GetBySusCardAsync(request.SusCardNumber);
+                    if (existingPatient != null)
+                    {
+                        return BaseResponse<PatientResponse>.FailureResponse("Cartão SUS já cadastrado no sistema");
+                    }
                 }
 
                 var patient = new Patient
                 {
                     FullName = request.FullName,
-                    RG = request.RG,
-                    CPF = request.CPF,
+                    RG = request.RG ?? "",
+                    CPF = request.CPF ?? "",
                     Age = request.Age,
                     BirthDate = request.BirthDate,
-                    SusCardNumber = request.SusCardNumber,
+                    SusCardNumber = request.SusCardNumber ?? "",
                     PhoneNumber = request.PhoneNumber,
-                    MotherName = request.MotherName
+                    MotherName = request.MotherName ?? "",
+                    Address = request.Address
                 };
 
                 await _unitOfWork.Patients.AddAsync(patient);
@@ -80,22 +78,30 @@ namespace HospitalTransport.Application.Services
             try
             {
                 var patient = await _unitOfWork.Patients.GetByIdAsync(request.Id);
+
                 if (patient == null)
                 {
                     return BaseResponse<PatientResponse>.FailureResponse("Paciente não encontrado");
                 }
-                // Verificar se CPF já existe em outro paciente
-                var existingPatient = await _unitOfWork.Patients.GetByCPFAsync(request.CPF);
-                if (existingPatient != null && existingPatient.Id != request.Id)
+
+                // Verificar se CPF já existe em outro paciente - APENAS SE FOR PREENCHIDO
+                if (!string.IsNullOrWhiteSpace(request.CPF))
                 {
-                    return BaseResponse<PatientResponse>.FailureResponse("CPF já cadastrado para outro paciente");
+                    var existingPatient = await _unitOfWork.Patients.GetByCPFAsync(request.CPF);
+                    if (existingPatient != null && existingPatient.Id != request.Id)
+                    {
+                        return BaseResponse<PatientResponse>.FailureResponse("CPF já cadastrado para outro paciente");
+                    }
                 }
 
-                // Verificar se cartão SUS já existe em outro paciente
-                existingPatient = await _unitOfWork.Patients.GetBySusCardAsync(request.SusCardNumber);
-                if (existingPatient != null && existingPatient.Id != request.Id)
+                // Verificar se cartão SUS já existe em outro paciente - APENAS SE FOR PREENCHIDO
+                if (!string.IsNullOrWhiteSpace(request.SusCardNumber))
                 {
-                    return BaseResponse<PatientResponse>.FailureResponse("Cartão SUS já cadastrado para outro paciente");
+                    var existingPatient = await _unitOfWork.Patients.GetBySusCardAsync(request.SusCardNumber);
+                    if (existingPatient != null && existingPatient.Id != request.Id)
+                    {
+                        return BaseResponse<PatientResponse>.FailureResponse("Cartão SUS já cadastrado para outro paciente");
+                    }
                 }
 
                 patient.FullName = request.FullName;
@@ -106,6 +112,7 @@ namespace HospitalTransport.Application.Services
                 patient.SusCardNumber = request.SusCardNumber;
                 patient.PhoneNumber = request.PhoneNumber;
                 patient.MotherName = request.MotherName;
+                patient.Address = request.Address;
                 patient.UpdatedAt = DateTime.UtcNow;
 
                 await _unitOfWork.Patients.UpdateAsync(patient);
@@ -232,7 +239,8 @@ namespace HospitalTransport.Application.Services
                 SusCardNumber = patient.SusCardNumber,
                 PhoneNumber = patient.PhoneNumber,
                 MotherName = patient.MotherName,
-                CreatedAt = patient.CreatedAt
+                CreatedAt = patient.CreatedAt,
+                Address = patient.Address,
             };
         }
     }

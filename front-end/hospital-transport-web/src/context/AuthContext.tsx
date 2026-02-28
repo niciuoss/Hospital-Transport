@@ -40,6 +40,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           userId: response.data.data.userId,
           fullName: response.data.data.fullName,
           username: response.data.data.username,
+          role: response.data.data.role,
           token: response.data.data.token,
         };
 

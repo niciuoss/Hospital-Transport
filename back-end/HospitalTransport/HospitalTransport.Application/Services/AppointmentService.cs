@@ -46,19 +46,71 @@ namespace HospitalTransport.Application.Services
                 }
 
                 // Verificar se a poltrona está disponível
-                var occupiedSeats = await _unitOfWork.Appointments.GetOccupiedSeatsAsync(request.AppointmentDate);
-                if (occupiedSeats.Contains(request.SeatNumber))
+                var dateOnly = DateOnly.FromDateTime(request.AppointmentDate.Date);
+                var occupiedSeatsInBus = (await _unitOfWork.Appointments.FindAsync(a =>
+                    a.IsActive &&
+                    a.BusId == request.BusId &&
+                    DateOnly.FromDateTime(a.AppointmentDate) == dateOnly))
+                    .SelectMany(a => new[] { a.SeatNumber }.Concat(
+                        a.CompanionSeatNumber.HasValue ? new[] { a.CompanionSeatNumber.Value } : Array.Empty<int>()
+                    ))
+                    .Where(s => s > 0)
+                    .ToList();
+
+                if (occupiedSeatsInBus.Contains(request.SeatNumber))
                 {
                     return BaseResponse<AppointmentResponse>.FailureResponse("Poltrona já está ocupada");
                 }
 
-                var prioritySeats = new List<int> { 1, 2, 3, 5, 19, 20 };
+                var bus = await _unitOfWork.Buses.GetByIdAsync(request.BusId);
+                if (bus == null)
+                {
+                    return BaseResponse<AppointmentResponse>.FailureResponse("Ônibus não encontrado");
+                }
 
-                if (!request.IsPriority && prioritySeats.Contains(request.SeatNumber))
+                if (bus.SeatLayout == "Standard")
+                {
+                    var prioritySeats = new List<int> { 19, 20 };
+
+                    if (!request.IsPriority && prioritySeats.Contains(request.SeatNumber))
+                    {
+                        return BaseResponse<AppointmentResponse>.FailureResponse(
+                            "Poltronas 19 e 20 são exclusivas para pacientes prioritários"
+                        );
+                    }
+                }
+
+                bool isInfant = patient.Age <= 7;
+
+                // CRIANÇA DE COLO: Obrigatório ter acompanhante
+                if (isInfant && !request.CompanionId.HasValue)
                 {
                     return BaseResponse<AppointmentResponse>.FailureResponse(
-                        "Poltronas 1, 2, 3, 5, 19 e 20 são exclusivas para pacientes prioritários"
+                        "Crianças de 0 a 7 ano devem ter um acompanhante"
                     );
+                }
+
+                // CRIANÇA DE COLO sem poltrona própria (no colo)
+                if (isInfant && request.SeatNumber == 0)
+                {
+                    // Criança no colo - não precisa verificar disponibilidade de poltrona do paciente
+                    request.IsInfant = true;
+                }
+                // CRIANÇA DE COLO com cadeirinha (precisa de poltrona)
+                else if (isInfant && request.SeatNumber > 0)
+                {
+                    // Criança com cadeirinha - precisa verificar disponibilidade
+                    request.IsInfant = false; // Não é "de colo" nesse caso
+
+                    var isSeatAvailable = await _unitOfWork.Appointments
+                        .IsSeatAvailableAsync(request.AppointmentDate, request.SeatNumber);
+
+                    if (!isSeatAvailable)
+                    {
+                        return BaseResponse<AppointmentResponse>.FailureResponse(
+                            $"Poltrona {request.SeatNumber} já está ocupada para esta data"
+                        );
+                    }
                 }
 
                 // Verificar se está tentando usar a poltrona 4 (não existe)
@@ -67,6 +119,22 @@ namespace HospitalTransport.Application.Services
                     return BaseResponse<AppointmentResponse>.FailureResponse(
                         "A poltrona 4 não existe no ônibus"
                     );
+                }
+
+                if (!isInfant || request.SeatNumber > 0)
+                {
+                    if (request.SeatNumber > 0)
+                    {
+                        var isSeatAvailable = await _unitOfWork.Appointments
+                            .IsSeatAvailableAsync(request.AppointmentDate, request.SeatNumber);
+
+                        if (!isSeatAvailable)
+                        {
+                            return BaseResponse<AppointmentResponse>.FailureResponse(
+                                $"Poltrona {request.SeatNumber} já está ocupada para esta data"
+                            );
+                        }
+                    }
                 }
 
                 // Verificar acompanhante se informado
@@ -79,8 +147,22 @@ namespace HospitalTransport.Application.Services
                         return BaseResponse<AppointmentResponse>.FailureResponse("Acompanhante não encontrado");
                     }
 
+                    if (request.CompanionId == request.PatientId)
+                    {
+                        return BaseResponse<AppointmentResponse>.FailureResponse(
+                            "O acompanhante não pode ser o mesmo que o paciente"
+                        );
+                    }
+
+                    if (!request.CompanionSeatNumber.HasValue)
+                    {
+                        return BaseResponse<AppointmentResponse>.FailureResponse(
+                            "Número da poltrona do acompanhante é obrigatório"
+                        );
+                    }
+
                     if (request.CompanionSeatNumber.HasValue &&
-                        occupiedSeats.Contains(request.CompanionSeatNumber.Value))
+                        occupiedSeatsInBus.Contains(request.CompanionSeatNumber.Value))
                     {
                         return BaseResponse<AppointmentResponse>.FailureResponse(
                             "Poltrona do acompanhante já está ocupada"
@@ -106,9 +188,11 @@ namespace HospitalTransport.Application.Services
                     SeatNumber = request.SeatNumber,
                     AppointmentDate = request.AppointmentDate,
                     CompanionId = request.CompanionId,
+                    BusId = request.BusId,
                     CompanionSeatNumber = request.CompanionSeatNumber,
                     CreatedByUserId = request.CreatedByUserId,
-                    IsTicketPrinted = false
+                    IsTicketPrinted = false,
+                    IsInfant = request.IsInfant,
                 };
 
                 await _unitOfWork.Appointments.AddAsync(appointment);
@@ -226,26 +310,59 @@ namespace HospitalTransport.Application.Services
         }
 
         public async Task<BaseResponse<IEnumerable<SeatAvailabilityResponse>>> GetSeatAvailabilityAsync(
-    DateTime date,
-    bool isPriority)
+            DateTime date,
+            Guid busId,
+            bool isPriority)
         {
             try
             {
-                var occupiedSeats = await _unitOfWork.Appointments.GetOccupiedSeatsAsync(date);
+                // ✅ Buscar ônibus
+                var bus = await _unitOfWork.Buses.GetByIdAsync(busId);
+                if (bus == null)
+                {
+                    return BaseResponse<IEnumerable<SeatAvailabilityResponse>>.FailureResponse("Ônibus não encontrado");
+                }
+
+                var dateOnly = DateOnly.FromDateTime(date.Date);
+
+                // ✅ Buscar agendamentos DESTE ÔNIBUS nesta data
+                var appointments = (await _unitOfWork.Appointments.FindAsync(a =>
+                    a.IsActive &&
+                    a.BusId == busId &&
+                    DateOnly.FromDateTime(a.AppointmentDate) == dateOnly))
+                    .ToList();
+
+                var occupiedSeats = new List<int>();
+
+                foreach (var appointment in appointments)
+                {
+                    if (appointment.SeatNumber > 0)
+                    {
+                        occupiedSeats.Add(appointment.SeatNumber);
+                    }
+
+                    if (appointment.CompanionSeatNumber.HasValue)
+                    {
+                        occupiedSeats.Add(appointment.CompanionSeatNumber.Value);
+                    }
+                }
+
                 var seatAvailability = new List<SeatAvailabilityResponse>();
 
-                // Lista de poltronas prioritárias
-                var prioritySeats = new List<int> { 1, 2, 3, 5, 19, 20 };
+                // ✅ Lista de poltronas prioritárias (apenas para ônibus Fortaleza)
+                var prioritySeats = new List<int> { 19, 20 };
 
-                for (int i = 1; i <= 48; i++)
+                // ✅ Gerar poltronas baseado no total do ônibus
+                int maxSeat = bus.SeatLayout == "Standard" ? 48 : bus.TotalSeats;
+                for (int i = 1; i <= maxSeat; i++)
                 {
-                    // Poltrona 4 não existe
-                    if (i == 4)
+                    // ✅ Poltrona 4 não existe APENAS no ônibus Fortaleza
+                    if (bus.SeatLayout == "Standard" && i == 4)
                     {
                         continue;
                     }
 
-                    bool isPriorityOnly = prioritySeats.Contains(i);
+                    bool isPriorityOnly = prioritySeats.Contains(i) && bus.SeatLayout == "Standard";
                     bool isOccupied = occupiedSeats.Contains(i);
                     bool isAvailable = !isOccupied && (isPriority || !isPriorityOnly);
 
@@ -353,6 +470,67 @@ namespace HospitalTransport.Application.Services
             catch (Exception ex)
             {
                 return BaseResponse<bool>.FailureResponse($"Erro ao cancelar agendamento: {ex.Message}");
+            }
+        }
+
+        public async Task<BaseResponse<byte[]>> GenerateMonthlyReportPdfAsync(int year, int month)
+        {
+            try
+            {
+                // Calcular período do mês
+                var startDate = new DateTime(year, month, 1);
+                var endDate = startDate.AddMonths(1).AddDays(-1);
+
+                Console.WriteLine($"📅 Buscando agendamentos de {startDate:dd/MM/yyyy} até {endDate:dd/MM/yyyy}");
+
+                // Buscar todos os agendamentos do mês
+                var appointments = (await _unitOfWork.Appointments.FindAsync(a =>
+                    a.IsActive &&
+                    a.AppointmentDate >= startDate &&
+                    a.AppointmentDate <= endDate))
+                    .OrderBy(a => a.AppointmentDate)
+                    .ToList();
+
+                Console.WriteLine($"✅ Encontrados {appointments.Count} agendamentos");
+
+                if (!appointments.Any())
+                {
+                    return BaseResponse<byte[]>.FailureResponse(
+                        "Nenhum agendamento encontrado para o período selecionado"
+                    );
+                }
+
+                // Carregar dados relacionados (Patient e Companion)
+                foreach (var appointment in appointments)
+                {
+                    // Carregar paciente
+                    if (appointment.Patient == null)
+                    {
+                        appointment.Patient = await _unitOfWork.Patients.GetByIdAsync(appointment.PatientId);
+                        Console.WriteLine($"✅ Carregado paciente: {appointment.Patient?.FullName}");
+                    }
+
+                    // Carregar acompanhante (se existir)
+                    if (appointment.CompanionId.HasValue && appointment.Companion == null)
+                    {
+                        appointment.Companion = await _unitOfWork.Patients.GetByIdAsync(appointment.CompanionId.Value);
+                        Console.WriteLine($"✅ Carregado acompanhante: {appointment.Companion?.FullName}");
+                    }
+                }
+
+                Console.WriteLine("🔄 Gerando PDF...");
+
+                // Gerar PDF
+                var pdfBytes = _pdfService.GenerateMonthlyReportPdf(appointments, year, month);
+
+                Console.WriteLine($"✅ PDF gerado com sucesso! Tamanho: {pdfBytes.Length} bytes");
+
+                return BaseResponse<byte[]>.SuccessResponse(pdfBytes, "Relatório gerado com sucesso");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ ERRO COMPLETO: {ex.ToString()}");
+                return BaseResponse<byte[]>.FailureResponse($"Erro ao gerar relatório: {ex.Message}");
             }
         }
 

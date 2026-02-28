@@ -10,7 +10,7 @@ const menuItems = [
   { icon: Home, label: 'Dashboard', href: '/dashboard', adminOnly: false },
   { icon: Users, label: 'Pacientes', href: '/patients', adminOnly: false },
   { icon: Calendar, label: 'Agendamentos', href: '/appointments', adminOnly: false },
-  { icon: UserCog, label: 'Usuários', href: '/users', adminOnly: false },
+  { icon: UserCog, label: 'Usuários', href: '/users', adminOnly: true }, 
   { icon: FileText, label: 'Relatórios', href: '/reports', adminOnly: false },
   { icon: Settings, label: 'Administração', href: '/admin', adminOnly: true },
 ];
@@ -19,9 +19,10 @@ export function Sidebar() {
   const pathname = usePathname();
   const { user } = useAuth();
 
-  const visibleItems = menuItems.filter(item => 
-    !item.adminOnly || (user && JSON.parse(localStorage.getItem('user') || '{}').role === 'Admin')
-  );
+  const visibleItems = menuItems.filter(item => {
+    if (!item.adminOnly) return true;
+    return user?.role === 'Admin';
+  });
 
   return (
     <aside className="w-64 border-r bg-background sticky top-0 h-screen overflow-y-auto">

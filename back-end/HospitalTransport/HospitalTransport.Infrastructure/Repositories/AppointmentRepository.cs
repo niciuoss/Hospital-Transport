@@ -48,30 +48,6 @@ namespace HospitalTransport.Infrastructure.Repositories
                 .ToListAsync();
         }
 
-        public async Task<IEnumerable<int>> GetOccupiedSeatsAsync(DateTime date)
-        {
-            var startDate = date.Date;
-            var endDate = startDate.AddDays(1);
-
-            var appointments = await _dbSet
-                .Where(a => a.IsActive &&
-                    a.AppointmentDate >= startDate &&
-                    a.AppointmentDate < endDate)
-                .ToListAsync();
-
-            var occupiedSeats = new List<int>();
-
-            foreach (var appointment in appointments)
-            {
-                occupiedSeats.Add(appointment.SeatNumber);
-                if (appointment.CompanionSeatNumber.HasValue)
-                {
-                    occupiedSeats.Add(appointment.CompanionSeatNumber.Value);
-                }
-            }
-
-            return occupiedSeats.Distinct().ToList();
-        }
 
         public async Task<IEnumerable<Appointment>> SearchAppointmentsAsync(string searchTerm)
         {
@@ -106,6 +82,42 @@ namespace HospitalTransport.Infrastructure.Repositories
                     a.AppointmentDate <= endDate)
                 .OrderBy(a => a.AppointmentDate)
                 .ToListAsync();
+        }
+
+        public async Task<bool> IsSeatAvailableAsync(DateTime date, int seatNumber)
+        {
+            var dateOnly = DateOnly.FromDateTime(date.Date);
+
+            return !await _dbSet.AnyAsync(a =>
+                a.IsActive &&
+                DateOnly.FromDateTime(a.AppointmentDate) == dateOnly &&
+                (a.SeatNumber == seatNumber || a.CompanionSeatNumber == seatNumber));
+        }
+
+        public async Task<List<int>> GetOccupiedSeatsAsync(DateTime date)
+        {
+            var dateOnly = DateOnly.FromDateTime(date.Date);
+
+            var appointments = await _dbSet
+                .Where(a => a.IsActive && DateOnly.FromDateTime(a.AppointmentDate) == dateOnly) 
+                .ToListAsync();
+
+            var occupiedSeats = new List<int>();
+
+            foreach (var appointment in appointments)
+            {
+                if (appointment.SeatNumber > 0) // Ignorar crianças de colo (SeatNumber = 0)
+                {
+                    occupiedSeats.Add(appointment.SeatNumber);
+                }
+
+                if (appointment.CompanionSeatNumber.HasValue)
+                {
+                    occupiedSeats.Add(appointment.CompanionSeatNumber.Value);
+                }
+            }
+
+            return occupiedSeats.Distinct().ToList();
         }
     }
 }

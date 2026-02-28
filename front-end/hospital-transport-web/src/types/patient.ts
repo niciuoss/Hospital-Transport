@@ -9,6 +9,7 @@ export interface Patient {
   phoneNumber: string;
   motherName: string;
   createdAt: string;
+  address: string
 }
 
 export interface CreatePatientRequest {
@@ -20,6 +21,7 @@ export interface CreatePatientRequest {
   susCardNumber: string;
   phoneNumber: string;
   motherName: string;
+  address: string;
 }
 
 export interface PatientSearchResult {

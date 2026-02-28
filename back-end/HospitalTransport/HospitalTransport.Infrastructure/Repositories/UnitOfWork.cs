@@ -17,17 +17,20 @@ namespace HospitalTransport.Infrastructure.Repositories
         public IPatientRepository Patients { get; }
         public IAppointmentRepository Appointments { get; }
         public IUserRepository Users { get; }
+        public IBusRepository Buses { get; }
 
         public UnitOfWork(
             AppDbContext context,
             IPatientRepository patientRepository,
             IAppointmentRepository appointmentRepository,
-            IUserRepository userRepository)
+            IUserRepository userRepository,
+            IBusRepository busRepository)
         {
             _context = context;
             Patients = patientRepository;
             Appointments = appointmentRepository;
             Users = userRepository;
+            Buses = busRepository;
         }
         public async Task<int> SaveChangesAsync()
         {

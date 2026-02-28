@@ -74,12 +74,80 @@ namespace HospitalTransport.API.Controllers
             return Ok(result);
         }
 
+        [HttpGet("monthly-report-pdf")]
+        public async Task<IActionResult> GenerateMonthlyReportPdf([FromQuery] int year, [FromQuery] int month)
+        {
+            try
+            {
+                if (month < 1 || month > 12)
+                {
+                    return BadRequest(new { success = false, message = "Mês inválido" });
+                }
+
+                if (year < 2000 || year > DateTime.Now.Year)
+                {
+                    return BadRequest(new { success = false, message = "Ano inválido" });
+                }
+
+                var startDate = new DateTime(year, month, 1);
+                var endDate = startDate.AddMonths(1).AddDays(-1).AddHours(23).AddMinutes(59).AddSeconds(59);
+
+                Console.WriteLine($"📅 Buscando agendamentos de {startDate:dd/MM/yyyy} até {endDate:dd/MM/yyyy}");
+
+                var appointments = (await _unitOfWork.Appointments
+                    .FindAsync(a => a.IsActive &&
+                               a.AppointmentDate >= startDate &&
+                               a.AppointmentDate <= endDate))
+                    .OrderBy(a => a.AppointmentDate)
+                    .ToList();
+
+                Console.WriteLine($"✅ Encontrados {appointments.Count} agendamentos");
+
+                if (!appointments.Any())
+                {
+                    return NotFound(new { success = false, message = "Nenhum agendamento encontrado para este mês" });
+                }
+
+                // ✅ CARREGAR DADOS RELACIONADOS (Patient e Companion)
+                foreach (var appointment in appointments)
+                {
+                    // Carregar paciente
+                    if (appointment.Patient == null)
+                    {
+                        appointment.Patient = await _unitOfWork.Patients.GetByIdAsync(appointment.PatientId);
+                        Console.WriteLine($"  ✅ Paciente carregado: {appointment.Patient?.FullName ?? "NULL"}");
+                    }
+
+                    // Carregar acompanhante (se existir)
+                    if (appointment.CompanionId.HasValue && appointment.Companion == null)
+                    {
+                        appointment.Companion = await _unitOfWork.Patients.GetByIdAsync(appointment.CompanionId.Value);
+                        Console.WriteLine($"  ✅ Acompanhante carregado: {appointment.Companion?.FullName ?? "NULL"}");
+                    }
+                }
+
+                Console.WriteLine("🔄 Gerando PDF...");
+
+                var pdfBytes = _pdfService.GenerateMonthlyReportPdf(appointments, year, month);
+
+                Console.WriteLine($"✅ PDF gerado! Tamanho: {pdfBytes.Length} bytes");
+
+                return File(pdfBytes, "application/pdf", $"relatorio_mensal_{year}_{month:D2}.pdf");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ ERRO COMPLETO: {ex}");
+                return BadRequest(new { success = false, message = $"Erro ao gerar relatório: {ex.Message}" });
+            }
+        }
+
         [HttpGet("seat-availability")]
         public async Task<IActionResult> GetSeatAvailability(
             [FromQuery] DateTime date,
+            [FromQuery] Guid busId,
             [FromQuery] bool isPriority = false)
         {
-            var result = await _appointmentService.GetSeatAvailabilityAsync(date, isPriority);
+            var result = await _appointmentService.GetSeatAvailabilityAsync(date, busId, isPriority);
 
             if (!result.Success)
             {
@@ -136,6 +204,7 @@ namespace HospitalTransport.API.Controllers
                 return BadRequest(new { success = false, message = $"Erro ao gerar PDF: {ex.Message}" });
             }
         }
+
 
         [HttpGet("annual-report-pdf")]
         public async Task<IActionResult> GenerateAnnualReportPdf([FromQuery] int year)

@@ -16,6 +16,7 @@ namespace HospitalTransport.Infrastructure.Services
         public PdfService()
         {
             QuestPDF.Settings.License = LicenseType.Community;
+
         }
 
         public byte[] GenerateAppointmentTicket(Appointment appointment)
@@ -31,7 +32,7 @@ namespace HospitalTransport.Infrastructure.Services
 
                     page.PageColor(Colors.White);
 
-                    page.DefaultTextStyle(x => x.FontSize(9).FontFamily("Arial"));
+                    page.DefaultTextStyle(x => x.FontSize(9).FontFamily("Liberation Sans"));
 
                     page.Content().Row(row =>
                     {
@@ -78,7 +79,7 @@ namespace HospitalTransport.Infrastructure.Services
                     ("Tipo de Tratamento:", GetTreatmentTypeDescription(appointment)),
                     ("Data da Viagem:", appointment.AppointmentDate.ToString("dd/MM/yyyy")),
                     ("Horário:", appointment.AppointmentDate.ToString("HH:mm")),
-                    ("Poltrona:", appointment.SeatNumber.ToString("D2"))
+                    ("Poltrona:", GetDisplaySeatNumber(appointment))
                 });
                 
                 column.Item().PaddingVertical(4, Unit.Millimetre)
@@ -90,7 +91,7 @@ namespace HospitalTransport.Infrastructure.Services
                     {
                         col.Spacing(2);
                         col.Item().AlignCenter().Text("SUA POLTRONA").FontSize(12).SemiBold();
-                        col.Item().AlignCenter().Text(appointment.SeatNumber.ToString("D2"))
+                        col.Item().AlignCenter().Text(GetDisplaySeatNumber(appointment))
                             .FontSize(42).Bold().FontColor(Colors.Blue.Darken2);
                     });
                 
@@ -137,6 +138,294 @@ namespace HospitalTransport.Infrastructure.Services
             });
         }
 
+        public byte[] GenerateMonthlyReportPdf(List<Appointment> appointments, int year, int month)
+        {
+            //VERIFICAÇÃO: Lista vazia ou null
+            if (appointments == null || !appointments.Any())
+            {
+                throw new InvalidOperationException("Nenhum agendamento encontrado para o período selecionado.");
+            }
+
+            var document = Document.Create(container =>
+            {
+                container.Page(page =>
+                {
+                    //PAISAGEM (Landscape)
+                    page.Size(PageSizes.A4.Landscape());
+                    page.Margin(1, Unit.Centimetre);
+                    page.DefaultTextStyle(x => x.FontSize(8));
+
+                    page.Header().Element(ComposeMonthlyHeader);
+                    page.Content().Element(ComposeMonthlyContent);
+                    page.Footer().Element(ComposeFooter);
+
+                    void ComposeMonthlyHeader(IContainer container)
+                    {
+                        container.Column(column =>
+                        {
+                            column.Spacing(10);
+
+                            // Logo e Título
+                            column.Item().Row(row =>
+                            {
+                                row.RelativeItem().Column(col =>
+                                {
+                                    col.Item().Text("HOSPITAL MUNICIPAL DE PARAMBU")
+                                        .FontSize(14).Bold();
+                                    col.Item().Text("SECRETARIA MUNICIPAL DE SAÚDE")
+                                        .FontSize(12).SemiBold();
+                                    col.Item().Text("Sistema de Transporte Hospitalar")
+                                        .FontSize(10);
+                                });
+
+                                row.ConstantItem(150).AlignRight().Column(col =>
+                                {
+                                    col.Item().Text($"RELATÓRIO MENSAL")
+                                        .FontSize(12).Bold();
+                                    col.Item().Text($"{GetMonthName(month)}/{year}")
+                                        .FontSize(11);
+                                    col.Item().Text($"Emitido em: {DateTime.Now:dd/MM/yyyy HH:mm}")
+                                        .FontSize(8);
+                                });
+                            });
+
+                            // Separator
+                            column.Item().PaddingVertical(5).LineHorizontal(1).LineColor(Colors.Grey.Medium);
+                        });
+                    }
+
+                    void ComposeMonthlyContent(IContainer container)
+                    {
+                        container.Column(column =>
+                        {
+                            column.Spacing(15);
+
+                            // Resumo no topo
+                            column.Item().Element(ComposeResumo);
+
+                            // Título da tabela
+                            column.Item().PaddingTop(10).Text("LISTA COMPLETA DE PACIENTES E ACOMPANHANTES")
+                                .FontSize(11).Bold().FontColor(Colors.Blue.Darken2);
+
+                            // Tabela de pacientes e acompanhantes
+                            column.Item().Table(table =>
+                            {
+                                // Definir colunas
+                                table.ColumnsDefinition(columns =>
+                                {
+                                    columns.ConstantColumn(25);  // Nº
+                                    columns.ConstantColumn(50);  // Data
+                                    columns.ConstantColumn(35);  // Tipo
+                                    columns.RelativeColumn(2);   // Nome
+                                    columns.ConstantColumn(55);  // RG
+                                    columns.ConstantColumn(55);  // CPF
+                                    columns.ConstantColumn(30);  // Idade
+                                    columns.ConstantColumn(55);  // D.Nascimento
+                                    columns.RelativeColumn(2);   // Nome da Mãe
+                                    columns.ConstantColumn(55);  // SUS
+                                    columns.RelativeColumn(2);   // Endereço
+                                    columns.ConstantColumn(60);  // Hospital
+                                });
+
+                                // Cabeçalho
+                                table.Header(header =>
+                                {
+                                    header.Cell().Element(HeaderStyle).Text("Nº");
+                                    header.Cell().Element(HeaderStyle).Text("Data");
+                                    header.Cell().Element(HeaderStyle).Text("Tipo");
+                                    header.Cell().Element(HeaderStyle).Text("Nome Completo");
+                                    header.Cell().Element(HeaderStyle).Text("RG");
+                                    header.Cell().Element(HeaderStyle).Text("CPF");
+                                    header.Cell().Element(HeaderStyle).Text("Idade");
+                                    header.Cell().Element(HeaderStyle).Text("Data Nascimento");
+                                    header.Cell().Element(HeaderStyle).Text("Nome da Mãe");
+                                    header.Cell().Element(HeaderStyle).Text("Cartão SUS");
+                                    header.Cell().Element(HeaderStyle).Text("Endereço");
+                                    header.Cell().Element(HeaderStyle).Text("Hospital");
+
+                                    static IContainer HeaderStyle(IContainer container) =>
+                                        container.Border(1)
+                                            .Background(Colors.Blue.Lighten3)
+                                            .Padding(5)
+                                            .AlignCenter()
+                                            .AlignMiddle();
+                                });
+
+                                // Dados
+                                int rowNumber = 0;
+                                var sortedAppointments = appointments.OrderBy(a => a.AppointmentDate).ToList();
+
+                                foreach (var appointment in sortedAppointments)
+                                {
+                                    // Appointment não pode ser null
+                                    if (appointment == null) continue;
+
+                                    // Patient não pode ser null
+                                    if (appointment.Patient == null) continue;
+
+                                    // LINHA DO PACIENTE
+                                    rowNumber++;
+                                    var patient = appointment.Patient;
+                                    var isEvenRow = rowNumber % 2 == 0;
+
+                                    table.Cell().Element(c => CellStyle(c, isEvenRow)).Text(rowNumber.ToString());
+                                    table.Cell().Element(c => CellStyle(c, isEvenRow))
+                                        .Text(appointment.AppointmentDate.ToString("dd/MM/yyyy"));
+                                    table.Cell().Element(c => CellStyle(c, isEvenRow))
+                                        .Text("PACIENTE").FontColor(Colors.Green.Darken2).Bold();
+                                    table.Cell().Element(c => CellStyle(c, isEvenRow))
+                                        .Text(patient.FullName ?? "-");
+                                    table.Cell().Element(c => CellStyle(c, isEvenRow))
+                                        .Text(patient.RG ?? "-");
+                                    table.Cell().Element(c => CellStyle(c, isEvenRow))
+                                        .Text(FormatCPFReport(patient.CPF));
+                                    table.Cell().Element(c => CellStyle(c, isEvenRow))
+                                        .Text(patient.Age.ToString());
+                                    table.Cell().Element(c => CellStyle(c, isEvenRow))
+                                        .Text(patient.BirthDate.ToString("dd/MM/yyyy"));
+                                    table.Cell().Element(c => CellStyle(c, isEvenRow))
+                                        .Text(patient.MotherName ?? "-");
+                                    table.Cell().Element(c => CellStyle(c, isEvenRow))
+                                        .Text(patient.SusCardNumber ?? "-");
+                                    table.Cell().Element(c => CellStyle(c, isEvenRow))
+                                        .Text(FormatAddressReport(patient));
+                                    table.Cell().Element(c => CellStyle(c, isEvenRow))
+                                        .Text(appointment.DestinationHospital ?? "-");
+
+                                    // LINHA DO ACOMPANHANTE (se existir)
+                                    if (appointment.Companion != null)
+                                    {
+                                        rowNumber++;
+                                        var companion = appointment.Companion;
+                                        isEvenRow = rowNumber % 2 == 0;
+
+                                        table.Cell().Element(c => CellStyle(c, isEvenRow)).Text(rowNumber.ToString());
+                                        table.Cell().Element(c => CellStyle(c, isEvenRow))
+                                            .Text(appointment.AppointmentDate.ToString("dd/MM/yyyy"));
+                                        table.Cell().Element(c => CellStyle(c, isEvenRow))
+                                            .Text("ACOMP.").FontColor(Colors.Blue.Darken2).Bold();
+                                        table.Cell().Element(c => CellStyle(c, isEvenRow))
+                                            .Text(companion.FullName ?? "-");
+                                        table.Cell().Element(c => CellStyle(c, isEvenRow))
+                                            .Text(companion.RG ?? "-");
+                                        table.Cell().Element(c => CellStyle(c, isEvenRow))
+                                            .Text(FormatCPFReport(companion.CPF));
+                                        table.Cell().Element(c => CellStyle(c, isEvenRow))
+                                            .Text(companion.Age.ToString());
+                                        table.Cell().Element(c => CellStyle(c, isEvenRow))
+                                            .Text(FormatPhoneReport(companion.PhoneNumber));
+                                        table.Cell().Element(c => CellStyle(c, isEvenRow))
+                                            .Text(companion.MotherName ?? "-");
+                                        table.Cell().Element(c => CellStyle(c, isEvenRow))
+                                            .Text(companion.SusCardNumber ?? "-");
+                                        table.Cell().Element(c => CellStyle(c, isEvenRow))
+                                            .Text(FormatAddressReport(companion));
+                                        table.Cell().Element(c => CellStyle(c, isEvenRow))
+                                            .Text(appointment.DestinationHospital ?? "-");
+                                    }
+                                }
+
+                                static IContainer CellStyle(IContainer container, bool isEvenRow) =>
+                                    container.Border(1)
+                                        .BorderColor(Colors.Grey.Lighten2)
+                                        .Background(isEvenRow ? Colors.Grey.Lighten4 : Colors.White)
+                                        .Padding(4);
+                            });
+                        });
+                    }
+
+                    void ComposeResumo(IContainer container)
+                    {
+                        var totalPatients = appointments.Count();
+                        var totalWithCompanions = appointments.Count(a => a.CompanionId.HasValue);
+                        var totalPeople = totalPatients + totalWithCompanions;
+                        var totalPriority = appointments.Count(a => a.IsPriority);
+
+                        container.Background(Colors.Blue.Lighten4)
+                            .Padding(10)
+                            .Column(column =>
+                            {
+                                column.Spacing(5);
+
+                                column.Item().Text("RESUMO DO MÊS")
+                                    .FontSize(11).Bold().FontColor(Colors.Blue.Darken3);
+
+                                column.Item().Row(row =>
+                                {
+                                    row.RelativeItem().Text($"Total de Pacientes: {totalPatients}")
+                                        .FontSize(10).SemiBold();
+                                    row.RelativeItem().Text($"Com Acompanhantes: {totalWithCompanions}")
+                                        .FontSize(10).SemiBold();
+                                    row.RelativeItem().Text($"Pacientes Prioritários: {totalPriority}")
+                                        .FontSize(10).SemiBold();
+                                    row.RelativeItem().Text($"Total de Pessoas Transportadas: {totalPeople}")
+                                        .FontSize(10).SemiBold().FontColor(Colors.Green.Darken2);
+                                });
+                            });
+                    }
+
+                    void ComposeFooter(IContainer container)
+                    {
+                        container.AlignCenter().Text(text =>
+                        {
+                            text.Span("Página ").FontSize(8);
+                            text.CurrentPageNumber().FontSize(8);
+                            text.Span(" de ").FontSize(8);
+                            text.TotalPages().FontSize(8);
+                        });
+                    }
+                });
+            });
+
+            return document.GeneratePdf();
+        }
+
+        private string GetMonthName(int month)
+        {
+            return month switch
+            {
+                1 => "Janeiro",
+                2 => "Fevereiro",
+                3 => "Março",
+                4 => "Abril",
+                5 => "Maio",
+                6 => "Junho",
+                7 => "Julho",
+                8 => "Agosto",
+                9 => "Setembro",
+                10 => "Outubro",
+                11 => "Novembro",
+                12 => "Dezembro",
+                _ => "Mês Inválido"
+            };
+        }
+
+        private string FormatCPFReport(string? cpf)
+        {
+            if (string.IsNullOrWhiteSpace(cpf)) return "-";
+            cpf = new string(cpf.Where(char.IsDigit).ToArray());
+            if (cpf.Length != 11) return cpf;
+            return $"{cpf.Substring(0, 3)}.{cpf.Substring(3, 3)}.{cpf.Substring(6, 3)}-{cpf.Substring(9, 2)}";
+        }
+
+        private string FormatPhoneReport(string? phone)
+        {
+            if (string.IsNullOrWhiteSpace(phone)) return "-";
+            phone = new string(phone.Where(char.IsDigit).ToArray());
+            if (phone.Length == 11)
+                return $"({phone.Substring(0, 2)}) {phone.Substring(2, 5)}-{phone.Substring(7, 4)}";
+            if (phone.Length == 10)
+                return $"({phone.Substring(0, 2)}) {phone.Substring(2, 4)}-{phone.Substring(6, 4)}";
+            return phone;
+        }
+
+        private string FormatAddressReport(Patient patient)
+        {
+            if (!string.IsNullOrWhiteSpace(patient.Address))
+                return patient.Address;
+            return "-";
+        }
+
         private void ComposeDataSection(ColumnDescriptor column, string title, List<(string label, string value)> items)
         {
             column.Item().Text(title).SemiBold().FontSize(11);
@@ -177,13 +466,13 @@ namespace HospitalTransport.Infrastructure.Services
                     page.Size(PageSizes.A4);
                     page.Margin(2, Unit.Centimetre);
                     page.PageColor(Colors.White);
-                    page.DefaultTextStyle(x => x.FontSize(11).FontFamily("Arial"));
+                    page.DefaultTextStyle(x => x.FontSize(11).FontFamily("Liberation Sans"));
 
                     // Header
                     page.Header().Column(column =>
                     {
-                        column.Item().AlignCenter().Text("HOSPITAL MUNICIPAL")
-                            .FontSize(18).Bold().FontColor(Colors.Blue.Darken2);
+                        column.Item().AlignCenter().Text("HOSPITAL MUNICIPAL DE PARAMBU")
+                            .FontSize(18).Bold().FontColor(Colors.Green.Darken2);
 
                         column.Item().AlignCenter().Text("Lista de Passageiros")
                             .FontSize(14).FontColor(Colors.Grey.Darken1);
@@ -213,10 +502,10 @@ namespace HospitalTransport.Infrastructure.Services
                         {
                             table.ColumnsDefinition(columns =>
                             {
-                                columns.ConstantColumn(50); // Poltrona
-                                columns.RelativeColumn(3); // Nome
-                                columns.RelativeColumn(2); // CPF
-                                columns.ConstantColumn(80); // Tipo
+                                columns.ConstantColumn(60); // Poltrona 
+                                columns.RelativeColumn(4); // Nome 
+                                columns.RelativeColumn(2); // CPF 
+                                columns.ConstantColumn(90); // Tipo 
                             });
 
                             // Header da tabela
@@ -242,15 +531,16 @@ namespace HospitalTransport.Infrastructure.Services
                             {
                                 // Linha do paciente
                                 table.Cell().Border(1).BorderColor(Colors.Grey.Medium).Padding(5)
-                                    .Text(appointment.SeatNumber.ToString("D2")).FontSize(10).Bold();
+                                    .AlignCenter().Text(GetDisplaySeatNumber(appointment)).FontSize(10).Bold(); 
 
                                 table.Cell().Border(1).BorderColor(Colors.Grey.Medium).Padding(5)
-                                    .Text(appointment.Patient.FullName).FontSize(10);
+                                    .Text(appointment.Patient.FullName).FontSize(9); 
 
                                 table.Cell().Border(1).BorderColor(Colors.Grey.Medium).Padding(5)
-                                    .Text(FormatCPF(appointment.Patient.CPF)).FontSize(10);
+                                    .Text(FormatCPF(appointment.Patient.CPF)).FontSize(9); 
 
                                 table.Cell().Border(1).BorderColor(Colors.Grey.Medium).Padding(5)
+                                    .AlignCenter() 
                                     .Text(appointment.IsPriority ? "Prioritário" : "Paciente").FontSize(9)
                                     .FontColor(appointment.IsPriority ? Colors.Red.Darken1 : Colors.Blue.Darken1);
 
@@ -258,17 +548,18 @@ namespace HospitalTransport.Infrastructure.Services
                                 if (appointment.Companion != null && appointment.CompanionSeatNumber.HasValue)
                                 {
                                     table.Cell().Border(1).BorderColor(Colors.Grey.Medium).Padding(5)
-                                        .Text(appointment.CompanionSeatNumber.Value.ToString("D2")).FontSize(10).Bold();
+                                        .AlignCenter().Text(appointment.CompanionSeatNumber.Value.ToString("D2")).FontSize(10).Bold();
 
                                     table.Cell().Border(1).BorderColor(Colors.Grey.Medium).Padding(5)
-                                        .Text(appointment.Companion.FullName).FontSize(10);
+                                        .Text(appointment.Companion.FullName).FontSize(9);
 
                                     table.Cell().Border(1).BorderColor(Colors.Grey.Medium).Padding(5)
-                                        .Text(FormatCPF(appointment.Companion.CPF)).FontSize(10);
+                                        .Text(FormatCPF(appointment.Companion.CPF)).FontSize(9);
 
                                     table.Cell().Border(1).BorderColor(Colors.Grey.Medium).Padding(5)
+                                        .AlignCenter()
                                         .Text("Acompanhante").FontSize(9).FontColor(Colors.Green.Darken1);
-                                 }
+                                }
                             }
                         });
                         
@@ -307,13 +598,13 @@ namespace HospitalTransport.Infrastructure.Services
                     page.Size(PageSizes.A4);
                     page.Margin(2, Unit.Centimetre);
                     page.PageColor(Colors.White);
-                    page.DefaultTextStyle(x => x.FontSize(11).FontFamily("Arial"));
+                    page.DefaultTextStyle(x => x.FontSize(11).FontFamily("Liberation Sans"));
 
                     // Header
                     page.Header().Column(column =>
                     {
-                        column.Item().AlignCenter().Text("HOSPITAL MUNICIPAL")
-                            .FontSize(18).Bold().FontColor(Colors.Blue.Darken2);
+                        column.Item().AlignCenter().Text("HOSPITAL MUNICIPAL DE PARAMBU")
+                            .FontSize(18).Bold().FontColor(Colors.Green.Darken2);
 
                         column.Item().AlignCenter().Text($"Relatório Anual - {year}")
                             .FontSize(16).FontColor(Colors.Grey.Darken1);
@@ -492,7 +783,25 @@ namespace HospitalTransport.Infrastructure.Services
             }
             return description;
         }
-        
+
+        /// <summary>
+        /// Retorna o número da poltrona formatado para exibição no PDF.
+        /// Para crianças de colo (IsInfant = true e SeatNumber = 0), exibe o número
+        /// da poltrona do acompanhante com asterisco (ex: "26*") para indicar que
+        /// a criança está na mesma poltrona que o responsável.
+        /// </summary>
+        private string GetDisplaySeatNumber(Appointment appointment)
+        {
+            // Criança de colo no colo do acompanhante (não usa cadeirinha)
+            if (appointment.IsInfant && appointment.SeatNumber == 0 && appointment.CompanionSeatNumber.HasValue)
+            {
+                return $"{appointment.CompanionSeatNumber.Value.ToString("D2")}*";
+            }
+
+            // Caso normal: exibe o número da poltrona padrão
+            return appointment.SeatNumber.ToString("D2");
+        }
+
         #endregion
     }
 }

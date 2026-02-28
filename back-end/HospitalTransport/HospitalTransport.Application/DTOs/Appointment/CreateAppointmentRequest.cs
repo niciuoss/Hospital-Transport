@@ -19,5 +19,7 @@ namespace HospitalTransport.Application.DTOs.Appointment
         public Guid? CompanionId { get; set; }
         public int? CompanionSeatNumber { get; set; }
         public Guid CreatedByUserId { get; set; }
+        public Guid BusId { get; set; }
+        public bool IsInfant { get; set; } = false;
     }
 }

@@ -19,6 +19,7 @@ export interface CreateAppointmentRequest {
   patientId: string;
   medicalRecordNumber: string;
   destinationHospital: string;
+  busId: string;
   treatmentType: number;
   treatmentTypeOther?: string;
   isPriority: boolean;
@@ -33,6 +34,7 @@ export interface SeatAvailability {
   seatNumber: number;
   isAvailable: boolean;
   isPriorityOnly: boolean;
+  isPriority?: boolean;
 }
 
 interface Patient {

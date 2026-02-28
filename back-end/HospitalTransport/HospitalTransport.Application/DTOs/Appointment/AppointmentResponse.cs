@@ -23,5 +23,6 @@ namespace HospitalTransport.Application.DTOs.Appointment
         public string CreatedByUserName { get; set; } = string.Empty;
         public DateTime CreatedAt { get; set; }
         public bool IsTicketPrinted { get; set; }
+        public bool IsInfant { get; set; }
     }
 }

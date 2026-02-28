@@ -7,6 +7,7 @@ export interface LoginResponse {
   userId: string;
   fullName: string;
   username: string;
+  role: string;
   token: string;
 }
 
@@ -15,4 +16,5 @@ export interface User {
   fullName: string;
   username: string;
   token: string;
+  role: string;
 }

@@ -266,7 +266,7 @@ namespace HospitalTransport.Infrastructure.Services
                     // Footer
                     page.Footer().AlignCenter().Text(text =>
                     {
-                        text.Span("Documento gerado pelo Sistema de Transporte Hospitalar - ")
+                        text.Span("Documento gerado pelo Sistema do Transporte Hospitalar - ")
                             .FontSize(8).FontColor(Colors.Grey.Medium);
                         text.Span($"Página ").FontSize(8).FontColor(Colors.Grey.Medium);
                         text.CurrentPageNumber().FontSize(8).FontColor(Colors.Grey.Medium);

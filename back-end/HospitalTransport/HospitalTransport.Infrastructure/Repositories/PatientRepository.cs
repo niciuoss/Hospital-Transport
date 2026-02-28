@@ -28,14 +28,20 @@ namespace HospitalTransport.Infrastructure.Repositories
 
         public async Task<Patient?> GetByCPFAsync(string cpf)
         {
-            cpf = cpf.Replace(".", "").Replace("-", "").Trim();
-            return await _dbSet.FirstOrDefaultAsync(p => p.CPF == cpf && p.IsActive);
+            if (string.IsNullOrWhiteSpace(cpf))
+                return null;
+
+            return await _dbSet
+                .FirstOrDefaultAsync(p => p.IsActive && p.CPF == cpf);
         }
 
-        public async Task<Patient?> GetBySusCardAsync(string susCard)
+        public async Task<Patient?> GetBySusCardAsync(string susCardNumber)
         {
-            susCard = susCard.Trim();
-            return await _dbSet.FirstOrDefaultAsync(p => p.SusCardNumber == susCard && p.IsActive);
+            if (string.IsNullOrWhiteSpace(susCardNumber))
+                return null;
+
+            return await _dbSet
+                .FirstOrDefaultAsync(p => p.IsActive && p.SusCardNumber == susCardNumber);
         }
     }
 }

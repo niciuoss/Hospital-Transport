@@ -1,0 +1,24 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.2.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HospitalTransport.API", "HospitalTransport.API.csproj", "{C64B3F1B-4ED7-99DF-CCBD-A25C4D10AEC0}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{C64B3F1B-4ED7-99DF-CCBD-A25C4D10AEC0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C64B3F1B-4ED7-99DF-CCBD-A25C4D10AEC0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C64B3F1B-4ED7-99DF-CCBD-A25C4D10AEC0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C64B3F1B-4ED7-99DF-CCBD-A25C4D10AEC0}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {763321AA-590F-40DC-8057-A130FCCD37EC}
+	EndGlobalSection
+EndGlobal

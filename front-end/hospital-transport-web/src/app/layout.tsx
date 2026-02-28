@@ -9,7 +9,7 @@ const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "SATH - Sistema de Agendamento",
-  description: "Sistema de agendamento de transporte hospitalar",
+  description: "Sistema de agendamento do transporte hospitalar",
 };
 
 export default function RootLayout({

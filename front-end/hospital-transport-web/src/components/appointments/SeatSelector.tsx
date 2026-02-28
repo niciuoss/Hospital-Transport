@@ -30,8 +30,6 @@ export function SeatSelector({ seats, selectedSeat, onSelectSeat, isPriority }: 
     if (seat.isPriorityOnly && !isPriority) return 'Prioritário';
     return 'Disponível';
   };
-
-  // Organização das poltronas conforme o layout real do ônibus
   const layout = [
     // Fileira 1 (lado esquerdo) - Ímpares da frente
     [3, 7, 11, 15, 19, 23, 27, 31, 35, 39, 43, 47],

@@ -17,5 +17,6 @@ namespace HospitalTransport.Application.DTOs.Patient
         public string SusCardNumber { get; set; } = string.Empty;
         public string PhoneNumber { get; set; } = string.Empty;
         public string MotherName { get; set; } = string.Empty;
+        public string Address { get; set; } = string.Empty;
     }
 }

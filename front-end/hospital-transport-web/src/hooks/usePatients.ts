@@ -32,24 +32,39 @@ export function usePatients() {
     }
   };
 
-  const createPatient = async (data: CreatePatientRequest): Promise<Patient | null> => {
-    try {
-      setLoading(true);
-      const response = await api.post<BaseResponse<Patient>>('/patients', data);
-      if (response.data.success) {
-        toast.success('Paciente cadastrado com sucesso!');
-        return response.data.data;
-      }
-      toast.error(response.data.message);
-      return null;
-    } catch (error: any) {
-      const errors = error.response?.data?.errors || [];
-      errors.forEach((err: string) => toast.error(err));
-      return null;
-    } finally {
-      setLoading(false);
+const createPatient = async (data: CreatePatientRequest) => {
+  try {
+    const response = await api.post('/patients', data);
+    
+    if (response.data.success) {
+      toast.success(response.data.message || 'Paciente cadastrado com sucesso!');
+      return response.data.data;
     }
-  };
+    
+    // Se success: false no response
+    toast.error(response.data.message || 'Erro ao cadastrar paciente');
+    
+    // Mostrar erros específicos se houver
+    if (response.data.errors && response.data.errors.length > 0) {
+      response.data.errors.forEach((error: string) => {
+        toast.error(error);
+      });
+    }
+    
+    return null;
+  } catch (error: any) {
+    console.error('Erro ao cadastrar paciente:', error);
+    
+    // Capturar mensagem de erro do back-end
+    const errorMessage = error.response?.data?.message || 
+                        error.response?.data?.errors?.[0] ||
+                        'Erro ao cadastrar paciente';
+    
+    toast.error(errorMessage);
+    
+    return null;
+  }
+};
 
   const updatePatient = async (id: string, data: CreatePatientRequest): Promise<Patient | null> => {
   try {

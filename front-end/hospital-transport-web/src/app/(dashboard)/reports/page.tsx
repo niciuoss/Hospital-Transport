@@ -12,8 +12,12 @@ import { Appointment } from "@/types/appointment";
 import { toast } from "sonner";
 
 export default function ReportsPage() {
-  const { getAppointments, downloadPassengerList, downloadAnnualReport } =
+  const { getAppointments, downloadPassengerList, downloadAnnualReport, downloadMonthlyReport } =
     useAppointments();
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
+  const [selectedYearForMonth, setSelectedYearForMonth] = useState(
+    new Date().getFullYear()
+  );
   const { getPatients } = usePatients();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [dateFrom, setDateFrom] = useState("");
@@ -22,6 +26,25 @@ export default function ReportsPage() {
     Appointment[]
   >([]);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+
+  const handleDownloadMonthlyReport = () => {
+    downloadMonthlyReport(selectedYearForMonth, selectedMonth);
+  };
+
+  const months = [
+    { value: 1, label: "Janeiro" },
+    { value: 2, label: "Fevereiro" },
+    { value: 3, label: "Março" },
+    { value: 4, label: "Abril" },
+    { value: 5, label: "Maio" },
+    { value: 6, label: "Junho" },
+    { value: 7, label: "Julho" },
+    { value: 8, label: "Agosto" },
+    { value: 9, label: "Setembro" },
+    { value: 10, label: "Outubro" },
+    { value: 11, label: "Novembro" },
+    { value: 12, label: "Dezembro" },
+  ];
 
   useEffect(() => {
     loadData();
@@ -115,19 +138,11 @@ export default function ReportsPage() {
         <CardContent>
           <div className="grid gap-4 md:grid-cols-3">
             <div className="space-y-2">
-              <Label>Data Inicial</Label>
+              <Label>Data da viagem</Label>
               <Input
                 type="date"
                 value={dateFrom}
                 onChange={(e) => setDateFrom(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Data Final</Label>
-              <Input
-                type="date"
-                value={dateTo}
-                onChange={(e) => setDateTo(e.target.value)}
               />
             </div>
             <div className="flex items-end">
@@ -140,6 +155,55 @@ export default function ReportsPage() {
           <p className="text-sm text-muted-foreground mt-4">
             * A lista de passageiros será gerada apenas para a{" "}
             <strong>Data Inicial</strong> selecionada
+          </p>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle>Relatório Mensal</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="space-y-2">
+              <Label>Mês</Label>
+              <select
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                {months.map((month) => (
+                  <option key={month.value} value={month.value}>
+                    {month.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-2">
+              <Label>Ano</Label>
+              <select
+                value={selectedYearForMonth}
+                onChange={(e) =>
+                  setSelectedYearForMonth(parseInt(e.target.value))
+                }
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                {years.map((year) => (
+                  <option key={year} value={year}>
+                    {year}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex items-end">
+              <Button onClick={handleDownloadMonthlyReport} className="w-full">
+                <FileText className="h-4 w-4 mr-2" />
+                Baixar Relatório Mensal (PDF)
+              </Button>
+            </div>
+          </div>
+          <p className="text-sm text-muted-foreground mt-4">
+            O relatório mensal contém estatísticas do mês, viagens por semana,
+            tipos de tratamento e dias com mais viagens.
           </p>
         </CardContent>
       </Card>

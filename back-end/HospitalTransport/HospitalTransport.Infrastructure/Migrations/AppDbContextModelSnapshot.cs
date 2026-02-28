@@ -31,6 +31,9 @@ namespace HospitalTransport.Infrastructure.Migrations
                     b.Property<DateTime>("AppointmentDate")
                         .HasColumnType("timestamp without time zone");
 
+                    b.Property<Guid>("BusId")
+                        .HasColumnType("uuid");
+
                     b.Property<Guid?>("CompanionId")
                         .HasColumnType("uuid");
 
@@ -49,6 +52,9 @@ namespace HospitalTransport.Infrastructure.Migrations
                         .HasColumnType("character varying(200)");
 
                     b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsInfant")
                         .HasColumnType("boolean");
 
                     b.Property<bool>("IsPriority")
@@ -85,16 +91,75 @@ namespace HospitalTransport.Infrastructure.Migrations
 
                     b.HasIndex("AppointmentDate");
 
+                    b.HasIndex("BusId");
+
                     b.HasIndex("CompanionId");
 
                     b.HasIndex("CreatedByUserId");
 
                     b.HasIndex("PatientId");
 
-                    b.HasIndex("AppointmentDate", "SeatNumber")
-                        .IsUnique();
-
                     b.ToTable("Appointments", (string)null);
+                });
+
+            modelBuilder.Entity("HospitalTransport.Domain.Entities.Bus", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<string>("Destination")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("SeatLayout")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<int>("TotalSeats")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Buses");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("11111111-1111-1111-1111-111111111111"),
+                            CreatedAt = new DateTime(2025, 11, 28, 1, 27, 41, 569, DateTimeKind.Utc).AddTicks(8327),
+                            Destination = "Fortaleza",
+                            IsActive = true,
+                            Name = "Ônibus Fortaleza",
+                            SeatLayout = "Standard",
+                            TotalSeats = 47
+                        },
+                        new
+                        {
+                            Id = new Guid("22222222-2222-2222-2222-222222222222"),
+                            CreatedAt = new DateTime(2025, 11, 28, 1, 27, 41, 569, DateTimeKind.Utc).AddTicks(8333),
+                            Destination = "Quixeramobim",
+                            IsActive = true,
+                            Name = "Microônibus Quixeramobim",
+                            SeatLayout = "Microbus",
+                            TotalSeats = 31
+                        });
                 });
 
             modelBuilder.Entity("HospitalTransport.Domain.Entities.Patient", b =>
@@ -102,6 +167,11 @@ namespace HospitalTransport.Infrastructure.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
+
+                    b.Property<string>("Address")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
 
                     b.Property<int>("Age")
                         .HasColumnType("integer");
@@ -150,12 +220,6 @@ namespace HospitalTransport.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CPF")
-                        .IsUnique();
-
-                    b.HasIndex("SusCardNumber")
-                        .IsUnique();
-
                     b.ToTable("Patients", (string)null);
                 });
 
@@ -186,7 +250,7 @@ namespace HospitalTransport.Infrastructure.Migrations
                         {
                             Id = 1,
                             IsEnabled = true,
-                            LastChanged = new DateTime(2025, 10, 7, 11, 33, 22, 573, DateTimeKind.Utc).AddTicks(551),
+                            LastChanged = new DateTime(2025, 11, 28, 1, 27, 41, 569, DateTimeKind.Utc).AddTicks(8370),
                             Message = "Sistema operando normalmente"
                         });
                 });
@@ -235,8 +299,8 @@ namespace HospitalTransport.Infrastructure.Migrations
                     b.HasData(
                         new
                         {
-                            Id = new Guid("8894d286-47a6-4ee2-a32a-65dabc2bc4cc"),
-                            CreatedAt = new DateTime(2025, 10, 7, 11, 33, 22, 573, DateTimeKind.Utc).AddTicks(482),
+                            Id = new Guid("3c31216b-7b1b-4043-923e-dee94404d848"),
+                            CreatedAt = new DateTime(2025, 11, 28, 1, 27, 41, 569, DateTimeKind.Utc).AddTicks(8054),
                             FullName = "Administrador do Sistema",
                             IsActive = true,
                             PasswordHash = "YWRtaW4xMjM=",
@@ -247,6 +311,12 @@ namespace HospitalTransport.Infrastructure.Migrations
 
             modelBuilder.Entity("HospitalTransport.Domain.Entities.Appointment", b =>
                 {
+                    b.HasOne("HospitalTransport.Domain.Entities.Bus", "Bus")
+                        .WithMany("Appointments")
+                        .HasForeignKey("BusId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("HospitalTransport.Domain.Entities.Patient", "Companion")
                         .WithMany("AppointmentsAsCompanion")
                         .HasForeignKey("CompanionId")
@@ -261,14 +331,21 @@ namespace HospitalTransport.Infrastructure.Migrations
                     b.HasOne("HospitalTransport.Domain.Entities.Patient", "Patient")
                         .WithMany("Appointments")
                         .HasForeignKey("PatientId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Bus");
 
                     b.Navigation("Companion");
 
                     b.Navigation("CreatedByUser");
 
                     b.Navigation("Patient");
+                });
+
+            modelBuilder.Entity("HospitalTransport.Domain.Entities.Bus", b =>
+                {
+                    b.Navigation("Appointments");
                 });
 
             modelBuilder.Entity("HospitalTransport.Domain.Entities.Patient", b =>

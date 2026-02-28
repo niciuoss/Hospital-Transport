@@ -17,15 +17,13 @@ namespace HospitalTransport.Application.Validators
                 .MaximumLength(200).WithMessage("Nome não pode ter mais de 200 caracteres");
 
             RuleFor(x => x.RG)
-                .NotEmpty().WithMessage("RG é obrigatório")
                 .Must(numero =>
                     (numero.Length >= 5 && numero.Length <= 20) || 
                     (numero.Length == 11) 
-                ).WithMessage("RG deve ter formato válido (antigo) ou 11 dígitos (novo CPF)");
+                ).WithMessage("RG deve ter formato válido (antigo) ou 11 dígitos (novo CPF)").When(x => !string.IsNullOrEmpty(x.RG));
 
             RuleFor(x => x.CPF)
-                .NotEmpty().WithMessage("CPF é obrigatório")
-                .Must(BeValidCPF).WithMessage("CPF inválido");
+                .Must(BeValidCPF).WithMessage("CPF inválido").When(x => !string.IsNullOrEmpty(x.CPF));
 
             RuleFor(x => x.Age)
                 .GreaterThan(0).WithMessage("Idade deve ser maior que zero")
@@ -36,25 +34,26 @@ namespace HospitalTransport.Application.Validators
                  .LessThan(DateOnly.FromDateTime(DateTime.Now)).WithMessage("Data de nascimento não pode ser futura");
 
             RuleFor(x => x.SusCardNumber)
-                .NotEmpty().WithMessage("Número do cartão SUS é obrigatório")
                 .Must(numero =>
                     (numero.Length == 15) || (numero.Length == 11)
-                ).WithMessage("Cartão SUS deve ter 15 dígitos (antigo) ou 11 dígitos (novo CPF)");
+                ).WithMessage("Cartão SUS deve ter 15 dígitos (antigo) ou 11 dígitos (novo CPF)").When(x => !string.IsNullOrEmpty(x.SusCardNumber));
 
             RuleFor(x => x.PhoneNumber)
-                .NotEmpty().WithMessage("Telefone é obrigatório");
+                .Must(numero =>
+                    (numero.Length == 11)
+                ).WithMessage("Telefone é obrigatório").When(x => !string.IsNullOrEmpty(x.PhoneNumber));
+
+            RuleFor(x => x.Address)
+                .NotEmpty().WithMessage("Endereço é obrigatório")
+                .MaximumLength(500).WithMessage("Endereço não pode ter mais de 500 caracteres");
 
             RuleFor(x => x.MotherName)
-                .NotEmpty().WithMessage("Nome da mãe é obrigatório")
-                .MaximumLength(200).WithMessage("Nome da mãe não pode ter mais de 200 caracteres");
+                .MaximumLength(200).WithMessage("Nome da mãe não pode ter mais de 200 caracteres").When(x => !string.IsNullOrEmpty(x.MotherName));
         }
 
         private bool BeValidCPF(string cpf)
         {
-            cpf = cpf.Replace(".", "").Replace("-", "").Trim();
-            if (cpf.Length != 11) return false;
-            if (cpf.Distinct().Count() == 1) return false;
-            return true; // Validação simplificada
+            return true;
         }
     }
 }

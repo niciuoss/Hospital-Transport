@@ -18,5 +18,6 @@ namespace HospitalTransport.Application.DTOs.Patient
         public string PhoneNumber { get; set; } = string.Empty;
         public string MotherName { get; set; } = string.Empty;
         public DateTime CreatedAt { get; set; }
+        public string Address { get; set; } = string.Empty;
     }
 }

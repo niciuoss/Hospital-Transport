@@ -11,6 +11,7 @@ namespace HospitalTransport.Domain.Interfaces
         IPatientRepository Patients { get; }
         IAppointmentRepository Appointments { get; }
         IUserRepository Users { get; }
+        IBusRepository Buses { get; }
         Task<int> SaveChangesAsync();
         Task BeginTransactionAsync();
         Task CommitTransactionAsync();

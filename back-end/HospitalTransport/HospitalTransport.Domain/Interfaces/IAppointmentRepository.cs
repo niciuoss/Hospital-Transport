@@ -9,8 +9,10 @@ namespace HospitalTransport.Domain.Interfaces
     {
         Task<IEnumerable<Appointment>> GetRecentAppointmentsAsync(int count);
         Task<IEnumerable<Appointment>> GetAppointmentsByDateAsync(DateTime date);
-        Task<IEnumerable<int>> GetOccupiedSeatsAsync(DateTime date);
         Task<IEnumerable<Appointment>> SearchAppointmentsAsync(string searchTerm);
         Task<IEnumerable<Appointment>> GetAppointmentsByYearAsync(int year);
+        Task<bool> IsSeatAvailableAsync(DateTime date, int seatNumber);
+        //Task<IEnumerable<int>> GetOccupiedSeatsAsync(DateTime date);
+        Task<List<int>> GetOccupiedSeatsAsync(DateTime date);
     }
 }

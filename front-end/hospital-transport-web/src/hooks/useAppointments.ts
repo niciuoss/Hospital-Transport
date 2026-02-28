@@ -32,10 +32,13 @@ export function useAppointments() {
     }
   };
 
-  const getSeatAvailability = async (date: string, isPriority: boolean): Promise<SeatAvailability[]> => {
+  const getSeatAvailability = async (
+    date: string, 
+    busId: string,
+    isPriority: boolean): Promise<SeatAvailability[]> => {
     try {
-      const response = await api.get<BaseResponse<SeatAvailability[]>>('/appointments/seat-availability', {
-        params: { date, isPriority }
+      const response = await api.get<BaseResponse<SeatAvailability[]>>( `/appointments/seat-availability?date=${date}&busId=${busId}&isPriority=${isPriority}`, {
+        params: { date, isPriority, busId }
       });
       return response.data.data || [];
     } catch (error: any) {
@@ -100,6 +103,28 @@ export function useAppointments() {
     }
   };
 
+  const downloadMonthlyReport = async (year: number, month: number) => {
+    try {
+      const response = await api.get('/appointments/monthly-report-pdf', {
+        params: { year, month },
+        responseType: 'blob'
+      });
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `relatorio_mensal_${year}_${month.toString().padStart(2, '0')}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+
+      toast.success('Relatório mensal baixado com sucesso!');
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Erro ao baixar relatório mensal');
+    }
+  };
+
+
   const downloadPassengerList = async (date: string) => {
     try {
       const response = await api.get('/appointments/passenger-list-pdf', {
@@ -151,6 +176,7 @@ export function useAppointments() {
     downloadTicket,
     deleteAppointment,
     downloadPassengerList,
-    downloadAnnualReport
+    downloadAnnualReport,
+    downloadMonthlyReport
   };
 }

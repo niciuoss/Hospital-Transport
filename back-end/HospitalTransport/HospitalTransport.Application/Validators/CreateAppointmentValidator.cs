@@ -30,7 +30,7 @@ namespace HospitalTransport.Application.Validators
                 .WithMessage("Especifique o tipo de tratamento");
 
             RuleFor(x => x.SeatNumber)
-                .GreaterThan(0).WithMessage("Número da poltrona inválido")
+                .GreaterThanOrEqualTo(0).WithMessage("Número da poltrona inválido")
                 .LessThanOrEqualTo(48).WithMessage("Número da poltrona não existe")
                 .NotEqual(4).WithMessage("A poltrona 4 não existe neste ônibus");
 

@@ -19,12 +19,14 @@ namespace HospitalTransport.API.Middlewares
         {
             // Permite acesso a endpoints de saúde e swagger
             var path = context.Request.Path.Value?.ToLower() ?? "";
-            if (path.Contains("/health") || path.Contains("/swagger"))
+            if (context.Request.Path.StartsWithSegments("/api/auth/login") ||
+                context.Request.Path.StartsWithSegments("/api/admin/system-control") ||
+                context.Request.Path.StartsWithSegments("/health") ||
+                context.Request.Path.StartsWithSegments("/swagger"))
             {
                 await _next(context);
                 return;
             }
-
             try
             {
                 var systemControl = await dbContext.SystemControl.FirstOrDefaultAsync(sc => sc.Id == 1);

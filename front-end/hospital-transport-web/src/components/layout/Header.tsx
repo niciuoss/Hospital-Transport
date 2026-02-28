@@ -13,7 +13,7 @@ export function Header() {
     <header className="border-b bg-background">
       <div className="flex h-16 items-center px-6 justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-primary">Sistema de Agendamento para o Transporte Hospitalar</h2>
+          <h2 className="text-2xl font-bold text-primary">Sistema de Agendamento do Transporte Hospitalar</h2>
           <p className="text-sm text-muted-foreground">Hospital e Maternidade Dr. Cicero Ferreira Filho</p>
         </div>
         

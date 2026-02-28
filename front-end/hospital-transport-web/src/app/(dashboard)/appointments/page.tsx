@@ -105,7 +105,7 @@ export default function AppointmentsPage() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold">Agendamentos</h1>
-          <p className="text-muted-foreground">Gerencie os agendamentos de transporte</p>
+          <p className="text-muted-foreground">Gerencie os agendamentos do transporte</p>
         </div>
         <Link href="/appointments/new">
           <Button>
@@ -239,30 +239,84 @@ export default function AppointmentsPage() {
                   />
                 </PaginationItem>
                 
-                {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
-                  let pageNum;
-                  if (totalPages <= 7) {
-                    pageNum = i + 1;
-                  } else if (currentPage <= 4) {
-                    pageNum = i + 1;
-                  } else if (currentPage >= totalPages - 3) {
-                    pageNum = totalPages - 6 + i;
-                  } else {
-                    pageNum = currentPage - 3 + i;
-                  }
-                  
-                  return (
-                    <PaginationItem key={pageNum}>
+                {(() => {
+                  const pages = [];
+                  const showEllipsisStart = currentPage > 3;
+                  const showEllipsisEnd = currentPage < totalPages - 2;
+
+                  // Sempre mostra a primeira página
+                  pages.push(
+                    <PaginationItem key={1}>
                       <PaginationLink
-                        onClick={() => setCurrentPage(pageNum)}
-                        isActive={currentPage === pageNum}
+                        onClick={() => setCurrentPage(1)}
+                        isActive={currentPage === 1}
                         className="cursor-pointer"
                       >
-                        {pageNum}
+                        1
                       </PaginationLink>
                     </PaginationItem>
                   );
-                })}
+
+                  // Reticências no início
+                  if (showEllipsisStart) {
+                    pages.push(
+                      <PaginationItem key="ellipsis-start">
+                        <span className="px-4">...</span>
+                      </PaginationItem>
+                    );
+                  }
+
+                  // Páginas do meio
+                  let startPage = Math.max(2, currentPage - 1);
+                  let endPage = Math.min(totalPages - 1, currentPage + 1);
+
+                  // Ajusta para sempre mostrar 5 páginas quando possível
+                  if (currentPage <= 3) {
+                    endPage = Math.min(5, totalPages - 1);
+                  } else if (currentPage >= totalPages - 2) {
+                    startPage = Math.max(2, totalPages - 4);
+                  }
+
+                  for (let i = startPage; i <= endPage; i++) {
+                    pages.push(
+                      <PaginationItem key={i}>
+                        <PaginationLink
+                          onClick={() => setCurrentPage(i)}
+                          isActive={currentPage === i}
+                          className="cursor-pointer"
+                        >
+                          {i}
+                        </PaginationLink>
+                      </PaginationItem>
+                    );
+                  }
+
+                  // Reticências no final
+                  if (showEllipsisEnd) {
+                    pages.push(
+                      <PaginationItem key="ellipsis-end">
+                        <span className="px-4">...</span>
+                      </PaginationItem>
+                    );
+                  }
+
+                  // Sempre mostra a última página
+                  if (totalPages > 1) {
+                    pages.push(
+                      <PaginationItem key={totalPages}>
+                        <PaginationLink
+                          onClick={() => setCurrentPage(totalPages)}
+                          isActive={currentPage === totalPages}
+                          className="cursor-pointer"
+                        >
+                          {totalPages}
+                        </PaginationLink>
+                      </PaginationItem>
+                    );
+                  }
+
+                  return pages;
+                })()}
                 
                 <PaginationItem>
                   <PaginationNext

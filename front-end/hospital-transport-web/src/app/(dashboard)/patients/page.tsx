@@ -119,6 +119,9 @@ export default function PatientsPage() {
                     <span className="font-medium">Nascimento:</span> {formatDate(patient.birthDate)}
                   </div>
                   <div className="text-sm">
+                    <span className="font-medium">Endereço:</span> {patient.address}
+                  </div>
+                  <div className="text-sm">
                     <span className="font-medium">Idade:</span> {patient.age} anos
                   </div>
                   <div className="mt-4">
@@ -144,17 +147,84 @@ export default function PatientsPage() {
                   />
                 </PaginationItem>
                 
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                  <PaginationItem key={page}>
-                    <PaginationLink
-                      onClick={() => setCurrentPage(page)}
-                      isActive={currentPage === page}
-                      className="cursor-pointer"
-                    >
-                      {page}
-                    </PaginationLink>
-                  </PaginationItem>
-                ))}
+                {(() => {
+                  const pages = [];
+                  const showEllipsisStart = currentPage > 3;
+                  const showEllipsisEnd = currentPage < totalPages - 2;
+
+                  // Sempre mostra a primeira página
+                  pages.push(
+                    <PaginationItem key={1}>
+                      <PaginationLink
+                        onClick={() => setCurrentPage(1)}
+                        isActive={currentPage === 1}
+                        className="cursor-pointer"
+                      >
+                        1
+                      </PaginationLink>
+                    </PaginationItem>
+                  );
+
+                  // Reticências no início
+                  if (showEllipsisStart) {
+                    pages.push(
+                      <PaginationItem key="ellipsis-start">
+                        <span className="px-4">...</span>
+                      </PaginationItem>
+                    );
+                  }
+
+                  // Páginas do meio
+                  let startPage = Math.max(2, currentPage - 1);
+                  let endPage = Math.min(totalPages - 1, currentPage + 1);
+
+                  // Ajusta para sempre mostrar 5 páginas quando possível
+                  if (currentPage <= 3) {
+                    endPage = Math.min(5, totalPages - 1);
+                  } else if (currentPage >= totalPages - 2) {
+                    startPage = Math.max(2, totalPages - 4);
+                  }
+
+                  for (let i = startPage; i <= endPage; i++) {
+                    pages.push(
+                      <PaginationItem key={i}>
+                        <PaginationLink
+                          onClick={() => setCurrentPage(i)}
+                          isActive={currentPage === i}
+                          className="cursor-pointer"
+                        >
+                          {i}
+                        </PaginationLink>
+                      </PaginationItem>
+                    );
+                  }
+
+                  // Reticências no final
+                  if (showEllipsisEnd) {
+                    pages.push(
+                      <PaginationItem key="ellipsis-end">
+                        <span className="px-4">...</span>
+                      </PaginationItem>
+                    );
+                  }
+
+                  // Sempre mostra a última página
+                  if (totalPages > 1) {
+                    pages.push(
+                      <PaginationItem key={totalPages}>
+                        <PaginationLink
+                          onClick={() => setCurrentPage(totalPages)}
+                          isActive={currentPage === totalPages}
+                          className="cursor-pointer"
+                        >
+                          {totalPages}
+                        </PaginationLink>
+                      </PaginationItem>
+                    );
+                  }
+
+                  return pages;
+                })()}
                 
                 <PaginationItem>
                   <PaginationNext

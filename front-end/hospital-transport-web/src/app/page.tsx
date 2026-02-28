@@ -37,7 +37,7 @@ export default function HomePage() {
           <div className="text-center mb-16">
             <h1 className="text-5xl font-bold text-primary mb-4">SATH</h1>
             <p className="text-xl text-muted-foreground mb-8">
-              Sistema de Agendamento de Transporte Hospitalar
+              Sistema de Agendamento do Transporte Hospitalar
             </p>
             <Button size="lg" onClick={() => router.push('/login')}>
               Acessar Sistema
@@ -79,7 +79,7 @@ export default function HomePage() {
 
           <div className="text-center mt-16 text-sm text-muted-foreground">
             <p>Sistema desenvolvido para otimizar o transporte de pacientes</p>
-            <p className="mt-2">© 2025 Hospital Transport - Todos os direitos reservados</p>
+            <p className="mt-2">© 2025 SATH - Todos os direitos reservados</p>
           </div>
         </div>
       </div>

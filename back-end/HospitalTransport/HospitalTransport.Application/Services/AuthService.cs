@@ -36,7 +36,8 @@ namespace HospitalTransport.Application.Services
                     UserId = user.Id,
                     FullName = user.FullName,
                     Username = user.Username,
-                    Token = GenerateSimpleToken(user.Id)
+                    Token = GenerateSimpleToken(user.Id),
+                    Role = user.Role.ToString()
                 };
 
                 return BaseResponse<LoginResponse>.SuccessResponse(response, "Login realizado com sucesso");

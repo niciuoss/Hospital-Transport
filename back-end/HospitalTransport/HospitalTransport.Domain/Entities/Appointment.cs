@@ -30,8 +30,15 @@ namespace HospitalTransport.Domain.Entities
         public Guid CreatedByUserId { get; set; }
         public User CreatedByUser { get; set; } = null!;
 
+        public Guid BusId { get; set; }
+        public Bus Bus { get; set; } = null!;
+
         // Status
         public bool IsTicketPrinted { get; set; }
         public DateTime? PrintedAt { get; set; }
+
+        //Criança de colo
+        public bool IsInfant { get; set; } = false;
+
     }
 }

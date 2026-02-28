@@ -18,9 +18,10 @@ namespace HospitalTransport.Infrastructure.Data
         }
 
         public DbSet<User> Users { get; set; }
+        public DbSet<Bus> Buses { get; set; }
         public DbSet<Patient> Patients { get; set; }
         public DbSet<Appointment> Appointments { get; set; }
-        public DbSet<SystemControl> SystemControl { get; set; } // ADICIONE ESTA LINHA
+        public DbSet<SystemControl> SystemControl { get; set; } 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -38,6 +39,15 @@ namespace HospitalTransport.Infrastructure.Data
                 entity.HasIndex(e => e.Username).IsUnique();
             });
 
+            modelBuilder.Entity<Bus>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.Destination).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.TotalSeats).IsRequired();
+                entity.Property(e => e.SeatLayout).IsRequired().HasMaxLength(50);
+            });
+
             // Configuração da entidade Patient
             modelBuilder.Entity<Patient>(entity =>
             {
@@ -49,13 +59,14 @@ namespace HospitalTransport.Infrastructure.Data
                 entity.Property(e => e.SusCardNumber).IsRequired().HasMaxLength(15);
                 entity.Property(e => e.PhoneNumber).IsRequired().HasMaxLength(20);
                 entity.Property(e => e.MotherName).IsRequired().HasMaxLength(200);
+                entity.Property(e => e.Address).IsRequired().HasMaxLength(500);
 
                 // Converter DateOnly para Date no banco
                 entity.Property(e => e.BirthDate)
                     .HasColumnType("date");
 
-                entity.HasIndex(e => e.CPF).IsUnique();
-                entity.HasIndex(e => e.SusCardNumber).IsUnique();
+                //entity.HasIndex(e => e.CPF).IsUnique();
+                //entity.HasIndex(e => e.SusCardNumber).IsUnique();
             });
 
             // Configuração da entidade Appointment
@@ -78,8 +89,7 @@ namespace HospitalTransport.Infrastructure.Data
                 // Relacionamento com Patient
                 entity.HasOne(e => e.Patient)
                     .WithMany(p => p.Appointments)
-                    .HasForeignKey(e => e.PatientId)
-                    .OnDelete(DeleteBehavior.Restrict);
+                    .HasForeignKey(e => e.PatientId);
 
                 // Relacionamento com Companion (Patient)
                 entity.HasOne(e => e.Companion)
@@ -88,6 +98,12 @@ namespace HospitalTransport.Infrastructure.Data
                     .OnDelete(DeleteBehavior.Restrict)
                     .IsRequired(false);
 
+                // Relacionamento com Bus
+                entity.HasOne(e => e.Bus)
+                    .WithMany(b => b.Appointments)
+                    .HasForeignKey(e => e.BusId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
                 // Relacionamento com User
                 entity.HasOne(e => e.CreatedByUser)
                     .WithMany(u => u.CreatedAppointments)
@@ -95,7 +111,7 @@ namespace HospitalTransport.Infrastructure.Data
                     .OnDelete(DeleteBehavior.Restrict);
 
                 entity.HasIndex(e => e.AppointmentDate);
-                entity.HasIndex(e => new { e.AppointmentDate, e.SeatNumber }).IsUnique();
+                //entity.HasIndex(e => new { e.AppointmentDate, e.SeatNumber }).IsUnique();
             });
 
             // Configuração da entidade SystemControl
@@ -105,7 +121,7 @@ namespace HospitalTransport.Infrastructure.Data
                 entity.HasKey(e => e.Id);
                 entity.Property(e => e.Message).HasMaxLength(500);
                 entity.Property(e => e.LastChanged)
-                    .HasColumnType("timestamp without time zone");
+                    .HasColumnType("timestamp without time zone");              
             });
 
             // Seed inicial de usuário
@@ -120,6 +136,29 @@ namespace HospitalTransport.Infrastructure.Data
                 CreatedAt = DateTime.UtcNow,
                 IsActive = true
             });
+
+            modelBuilder.Entity<Bus>().HasData(
+                new Bus
+                {
+                    Id = Guid.Parse("11111111-1111-1111-1111-111111111111"),
+                    Name = "Ônibus Fortaleza",
+                    Destination = "Fortaleza",
+                    TotalSeats = 47,
+                    SeatLayout = "Standard",
+                    IsActive = true,
+                    CreatedAt = DateTime.UtcNow
+                },
+                new Bus
+                {
+                    Id = Guid.Parse("22222222-2222-2222-2222-222222222222"),
+                    Name = "Microônibus Quixeramobim",
+                    Destination = "Quixeramobim",
+                    TotalSeats = 31,
+                    SeatLayout = "Microbus",
+                    IsActive = true,
+                    CreatedAt = DateTime.UtcNow
+                }
+            );
 
             // Seed SystemControl - Sistema habilitado por padrão
             modelBuilder.Entity<SystemControl>().HasData(new SystemControl
