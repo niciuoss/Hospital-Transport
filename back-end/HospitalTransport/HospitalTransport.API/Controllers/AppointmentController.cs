@@ -233,6 +233,72 @@ namespace HospitalTransport.API.Controllers
             }
         }
 
+        [HttpGet("patients-report-pdf")]
+        public async Task<IActionResult> GeneratePatientsReportPdf([FromQuery] DateTime dateFrom, [FromQuery] DateTime dateTo)
+        {
+            try
+            {
+                var endDate = dateTo.Date.AddHours(23).AddMinutes(59).AddSeconds(59);
+                var appointments = (await _unitOfWork.Appointments
+                    .FindAsync(a => a.IsActive && a.AppointmentDate >= dateFrom.Date && a.AppointmentDate <= endDate))
+                    .ToList();
+
+                if (!appointments.Any())
+                    return NotFound(new { success = false, message = "Nenhum agendamento encontrado para o período" });
+
+                var pdfBytes = _pdfService.GeneratePatientsInPeriodPdf(appointments, dateFrom, dateTo);
+                return File(pdfBytes, "application/pdf", $"relatorio_pacientes_{dateFrom:yyyy-MM-dd}_{dateTo:yyyy-MM-dd}.pdf");
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { success = false, message = $"Erro ao gerar relatório: {ex.Message}" });
+            }
+        }
+
+        [HttpGet("companions-report-pdf")]
+        public async Task<IActionResult> GenerateCompanionsReportPdf([FromQuery] DateTime dateFrom, [FromQuery] DateTime dateTo)
+        {
+            try
+            {
+                var endDate = dateTo.Date.AddHours(23).AddMinutes(59).AddSeconds(59);
+                var appointments = (await _unitOfWork.Appointments
+                    .FindAsync(a => a.IsActive && a.AppointmentDate >= dateFrom.Date && a.AppointmentDate <= endDate))
+                    .ToList();
+
+                if (!appointments.Any())
+                    return NotFound(new { success = false, message = "Nenhum agendamento encontrado para o período" });
+
+                var pdfBytes = _pdfService.GenerateCompanionsInPeriodPdf(appointments, dateFrom, dateTo);
+                return File(pdfBytes, "application/pdf", $"relatorio_acompanhantes_{dateFrom:yyyy-MM-dd}_{dateTo:yyyy-MM-dd}.pdf");
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { success = false, message = $"Erro ao gerar relatório: {ex.Message}" });
+            }
+        }
+
+        [HttpGet("destinations-report-pdf")]
+        public async Task<IActionResult> GenerateDestinationsReportPdf([FromQuery] DateTime dateFrom, [FromQuery] DateTime dateTo)
+        {
+            try
+            {
+                var endDate = dateTo.Date.AddHours(23).AddMinutes(59).AddSeconds(59);
+                var appointments = (await _unitOfWork.Appointments
+                    .FindAsync(a => a.IsActive && a.AppointmentDate >= dateFrom.Date && a.AppointmentDate <= endDate))
+                    .ToList();
+
+                if (!appointments.Any())
+                    return NotFound(new { success = false, message = "Nenhum agendamento encontrado para o período" });
+
+                var pdfBytes = _pdfService.GenerateDestinationsReportPdf(appointments, dateFrom, dateTo);
+                return File(pdfBytes, "application/pdf", $"relatorio_destinos_{dateFrom:yyyy-MM-dd}_{dateTo:yyyy-MM-dd}.pdf");
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { success = false, message = $"Erro ao gerar relatório: {ex.Message}" });
+            }
+        }
+
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteAppointment(Guid id)
         {

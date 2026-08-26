@@ -84,12 +84,13 @@ namespace HospitalTransport.Infrastructure.Repositories
                 .ToListAsync();
         }
 
-        public async Task<bool> IsSeatAvailableAsync(DateTime date, int seatNumber)
+        public async Task<bool> IsSeatAvailableAsync(DateTime date, int seatNumber, Guid busId)
         {
             var dateOnly = DateOnly.FromDateTime(date.Date);
 
             return !await _dbSet.AnyAsync(a =>
                 a.IsActive &&
+                a.BusId == busId &&
                 DateOnly.FromDateTime(a.AppointmentDate) == dateOnly &&
                 (a.SeatNumber == seatNumber || a.CompanionSeatNumber == seatNumber));
         }

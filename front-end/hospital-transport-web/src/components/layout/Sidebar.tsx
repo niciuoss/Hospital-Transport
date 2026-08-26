@@ -29,7 +29,8 @@ export function Sidebar() {
       <nav className="p-4 space-y-2">
         {visibleItems.map((item) => {
           const Icon = item.icon;
-          const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+          const isActive = pathname === item.href || pathname.startsWith(item.href + '/') ||
+            (item.href === '/reports' && pathname.startsWith('/reports'));
           
           return (
             <Link

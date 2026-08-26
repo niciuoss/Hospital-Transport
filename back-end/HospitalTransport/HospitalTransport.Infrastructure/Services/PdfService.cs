@@ -16,7 +16,15 @@ namespace HospitalTransport.Infrastructure.Services
         public PdfService()
         {
             QuestPDF.Settings.License = LicenseType.Community;
+        }
 
+        private static int CalculateAge(DateOnly birthDate)
+        {
+            var today = DateOnly.FromDateTime(DateTime.Today);
+            var age = today.Year - birthDate.Year;
+            if (today < birthDate.AddYears(age))
+                age--;
+            return age < 0 ? 0 : age;
         }
 
         public byte[] GenerateAppointmentTicket(Appointment appointment)
@@ -280,7 +288,7 @@ namespace HospitalTransport.Infrastructure.Services
                                     table.Cell().Element(c => CellStyle(c, isEvenRow))
                                         .Text(FormatCPFReport(patient.CPF));
                                     table.Cell().Element(c => CellStyle(c, isEvenRow))
-                                        .Text(patient.Age.ToString());
+                                        .Text(CalculateAge(patient.BirthDate).ToString());
                                     table.Cell().Element(c => CellStyle(c, isEvenRow))
                                         .Text(patient.BirthDate.ToString("dd/MM/yyyy"));
                                     table.Cell().Element(c => CellStyle(c, isEvenRow))
@@ -311,7 +319,7 @@ namespace HospitalTransport.Infrastructure.Services
                                         table.Cell().Element(c => CellStyle(c, isEvenRow))
                                             .Text(FormatCPFReport(companion.CPF));
                                         table.Cell().Element(c => CellStyle(c, isEvenRow))
-                                            .Text(companion.Age.ToString());
+                                            .Text(CalculateAge(companion.BirthDate).ToString());
                                         table.Cell().Element(c => CellStyle(c, isEvenRow))
                                             .Text(FormatPhoneReport(companion.PhoneNumber));
                                         table.Cell().Element(c => CellStyle(c, isEvenRow))
@@ -803,5 +811,282 @@ namespace HospitalTransport.Infrastructure.Services
         }
 
         #endregion
+
+        public byte[] GeneratePatientsInPeriodPdf(List<Appointment> appointments, DateTime from, DateTime to)
+        {
+            var document = Document.Create(container =>
+            {
+                container.Page(page =>
+                {
+                    page.Size(PageSizes.A4);
+                    page.Margin(2, Unit.Centimetre);
+                    page.DefaultTextStyle(x => x.FontSize(10));
+
+                    page.Header().Column(col =>
+                    {
+                        col.Item().Text("HOSPITAL MUNICIPAL DE PARAMBU").FontSize(14).Bold();
+                        col.Item().Text("Relatório de Pacientes por Período").FontSize(12);
+                        col.Item().Text($"Período: {from:dd/MM/yyyy} a {to:dd/MM/yyyy}").FontSize(10);
+                        col.Item().Text($"Emitido em: {DateTime.Now:dd/MM/yyyy HH:mm}").FontSize(9);
+                        col.Item().PaddingVertical(5).LineHorizontal(1).LineColor(Colors.Grey.Medium);
+                    });
+
+                    page.Content().Column(col =>
+                    {
+                        col.Spacing(10);
+
+                        var totalPatients = appointments.Count;
+                        col.Item().Background(Colors.Blue.Lighten4).Padding(10).Column(inner =>
+                        {
+                            inner.Item().Text($"Total de Pacientes Transportados: {totalPatients}").FontSize(14).Bold();
+                        });
+
+                        col.Item().PaddingTop(10).Text("Detalhamento por Data").FontSize(11).Bold();
+
+                        var byDate = appointments.GroupBy(a => a.AppointmentDate.Date).OrderBy(g => g.Key);
+                        col.Item().Table(table =>
+                        {
+                            table.ColumnsDefinition(cols =>
+                            {
+                                cols.ConstantColumn(100);
+                                cols.RelativeColumn();
+                            });
+                            table.Header(header =>
+                            {
+                                header.Cell().Background(Colors.Blue.Lighten3).Padding(5).Text("Data").Bold();
+                                header.Cell().Background(Colors.Blue.Lighten3).Padding(5).Text("Pacientes").Bold();
+                            });
+                            foreach (var group in byDate)
+                            {
+                                table.Cell().Border(1).BorderColor(Colors.Grey.Lighten2).Padding(5).Text(group.Key.ToString("dd/MM/yyyy"));
+                                table.Cell().Border(1).BorderColor(Colors.Grey.Lighten2).Padding(5).Text(group.Count().ToString());
+                            }
+                        });
+                    });
+
+                    page.Footer().AlignCenter().Text(text =>
+                    {
+                        text.Span("Página ").FontSize(8);
+                        text.CurrentPageNumber().FontSize(8);
+                        text.Span(" de ").FontSize(8);
+                        text.TotalPages().FontSize(8);
+                    });
+                });
+            });
+            return document.GeneratePdf();
+        }
+
+        public byte[] GenerateCompanionsInPeriodPdf(List<Appointment> appointments, DateTime from, DateTime to)
+        {
+            var withCompanion = appointments.Where(a => a.CompanionId.HasValue).ToList();
+
+            var document = Document.Create(container =>
+            {
+                container.Page(page =>
+                {
+                    page.Size(PageSizes.A4);
+                    page.Margin(2, Unit.Centimetre);
+                    page.DefaultTextStyle(x => x.FontSize(10));
+
+                    page.Header().Column(col =>
+                    {
+                        col.Item().Text("HOSPITAL MUNICIPAL DE PARAMBU").FontSize(14).Bold();
+                        col.Item().Text("Relatório de Acompanhantes por Período").FontSize(12);
+                        col.Item().Text($"Período: {from:dd/MM/yyyy} a {to:dd/MM/yyyy}").FontSize(10);
+                        col.Item().Text($"Emitido em: {DateTime.Now:dd/MM/yyyy HH:mm}").FontSize(9);
+                        col.Item().PaddingVertical(5).LineHorizontal(1).LineColor(Colors.Grey.Medium);
+                    });
+
+                    page.Content().Column(col =>
+                    {
+                        col.Spacing(10);
+                        col.Item().Background(Colors.Blue.Lighten4).Padding(10).Column(inner =>
+                        {
+                            inner.Item().Text($"Total de Acompanhantes: {withCompanion.Count}").FontSize(14).Bold();
+                            inner.Item().Text($"Total de Agendamentos no Período: {appointments.Count}").FontSize(11);
+                        });
+
+                        col.Item().PaddingTop(10).Text("Detalhamento por Data").FontSize(11).Bold();
+
+                        var byDate = appointments.GroupBy(a => a.AppointmentDate.Date).OrderBy(g => g.Key);
+                        col.Item().Table(table =>
+                        {
+                            table.ColumnsDefinition(cols =>
+                            {
+                                cols.ConstantColumn(100);
+                                cols.RelativeColumn();
+                                cols.RelativeColumn();
+                            });
+                            table.Header(header =>
+                            {
+                                header.Cell().Background(Colors.Blue.Lighten3).Padding(5).Text("Data").Bold();
+                                header.Cell().Background(Colors.Blue.Lighten3).Padding(5).Text("Agendamentos").Bold();
+                                header.Cell().Background(Colors.Blue.Lighten3).Padding(5).Text("Acompanhantes").Bold();
+                            });
+                            foreach (var group in byDate)
+                            {
+                                var companions = group.Count(a => a.CompanionId.HasValue);
+                                table.Cell().Border(1).BorderColor(Colors.Grey.Lighten2).Padding(5).Text(group.Key.ToString("dd/MM/yyyy"));
+                                table.Cell().Border(1).BorderColor(Colors.Grey.Lighten2).Padding(5).Text(group.Count().ToString());
+                                table.Cell().Border(1).BorderColor(Colors.Grey.Lighten2).Padding(5).Text(companions.ToString());
+                            }
+                        });
+                    });
+
+                    page.Footer().AlignCenter().Text(text =>
+                    {
+                        text.Span("Página ").FontSize(8);
+                        text.CurrentPageNumber().FontSize(8);
+                        text.Span(" de ").FontSize(8);
+                        text.TotalPages().FontSize(8);
+                    });
+                });
+            });
+            return document.GeneratePdf();
+        }
+
+        public byte[] GenerateRegistrationsPdf(List<Patient> patients, DateTime from, DateTime to)
+        {
+            var document = Document.Create(container =>
+            {
+                container.Page(page =>
+                {
+                    page.Size(PageSizes.A4);
+                    page.Margin(2, Unit.Centimetre);
+                    page.DefaultTextStyle(x => x.FontSize(10));
+
+                    page.Header().Column(col =>
+                    {
+                        col.Item().Text("HOSPITAL MUNICIPAL DE PARAMBU").FontSize(14).Bold();
+                        col.Item().Text("Relatório de Cadastros Realizados").FontSize(12);
+                        col.Item().Text($"Período: {from:dd/MM/yyyy} a {to:dd/MM/yyyy}").FontSize(10);
+                        col.Item().Text($"Emitido em: {DateTime.Now:dd/MM/yyyy HH:mm}").FontSize(9);
+                        col.Item().PaddingVertical(5).LineHorizontal(1).LineColor(Colors.Grey.Medium);
+                    });
+
+                    page.Content().Column(col =>
+                    {
+                        col.Spacing(10);
+                        col.Item().Background(Colors.Blue.Lighten4).Padding(10).Column(inner =>
+                        {
+                            inner.Item().Text($"Total de Cadastros Realizados: {patients.Count}").FontSize(14).Bold();
+                        });
+
+                        col.Item().PaddingTop(10).Text("Lista de Pacientes Cadastrados").FontSize(11).Bold();
+
+                        col.Item().Table(table =>
+                        {
+                            table.ColumnsDefinition(cols =>
+                            {
+                                cols.ConstantColumn(25);
+                                cols.RelativeColumn(2);
+                                cols.ConstantColumn(90);
+                                cols.ConstantColumn(90);
+                            });
+                            table.Header(header =>
+                            {
+                                header.Cell().Background(Colors.Blue.Lighten3).Padding(5).Text("Nº").Bold();
+                                header.Cell().Background(Colors.Blue.Lighten3).Padding(5).Text("Nome Completo").Bold();
+                                header.Cell().Background(Colors.Blue.Lighten3).Padding(5).Text("CPF").Bold();
+                                header.Cell().Background(Colors.Blue.Lighten3).Padding(5).Text("Cadastrado em").Bold();
+                            });
+                            int row = 0;
+                            foreach (var p in patients.OrderBy(p => p.FullName))
+                            {
+                                row++;
+                                bool even = row % 2 == 0;
+                                table.Cell().Background(even ? Colors.Grey.Lighten4 : Colors.White).Border(1).BorderColor(Colors.Grey.Lighten2).Padding(4).Text(row.ToString());
+                                table.Cell().Background(even ? Colors.Grey.Lighten4 : Colors.White).Border(1).BorderColor(Colors.Grey.Lighten2).Padding(4).Text(p.FullName);
+                                table.Cell().Background(even ? Colors.Grey.Lighten4 : Colors.White).Border(1).BorderColor(Colors.Grey.Lighten2).Padding(4).Text(FormatCPFReport(p.CPF));
+                                table.Cell().Background(even ? Colors.Grey.Lighten4 : Colors.White).Border(1).BorderColor(Colors.Grey.Lighten2).Padding(4).Text(p.CreatedAt.ToString("dd/MM/yyyy"));
+                            }
+                        });
+                    });
+
+                    page.Footer().AlignCenter().Text(text =>
+                    {
+                        text.Span("Página ").FontSize(8);
+                        text.CurrentPageNumber().FontSize(8);
+                        text.Span(" de ").FontSize(8);
+                        text.TotalPages().FontSize(8);
+                    });
+                });
+            });
+            return document.GeneratePdf();
+        }
+
+        public byte[] GenerateDestinationsReportPdf(List<Appointment> appointments, DateTime from, DateTime to)
+        {
+            var destinations = appointments
+                .GroupBy(a => a.DestinationHospital)
+                .OrderBy(g => g.Key)
+                .Select(g => new { Name = g.Key, Count = g.Count() })
+                .ToList();
+
+            var document = Document.Create(container =>
+            {
+                container.Page(page =>
+                {
+                    page.Size(PageSizes.A4);
+                    page.Margin(2, Unit.Centimetre);
+                    page.DefaultTextStyle(x => x.FontSize(10));
+
+                    page.Header().Column(col =>
+                    {
+                        col.Item().Text("HOSPITAL MUNICIPAL DE PARAMBU").FontSize(14).Bold();
+                        col.Item().Text("Relatório de Destinos").FontSize(12);
+                        col.Item().Text($"Período: {from:dd/MM/yyyy} a {to:dd/MM/yyyy}").FontSize(10);
+                        col.Item().Text($"Emitido em: {DateTime.Now:dd/MM/yyyy HH:mm}").FontSize(9);
+                        col.Item().PaddingVertical(5).LineHorizontal(1).LineColor(Colors.Grey.Medium);
+                    });
+
+                    page.Content().Column(col =>
+                    {
+                        col.Spacing(10);
+                        col.Item().Background(Colors.Blue.Lighten4).Padding(10).Column(inner =>
+                        {
+                            inner.Item().Text($"Total de Destinos Únicos: {destinations.Count}").FontSize(12).Bold();
+                            inner.Item().Text($"Total de Viagens no Período: {appointments.Count}").FontSize(11);
+                        });
+
+                        col.Item().PaddingTop(10).Text("Destinos por Ordem Alfabética").FontSize(11).Bold();
+
+                        col.Item().Table(table =>
+                        {
+                            table.ColumnsDefinition(cols =>
+                            {
+                                cols.ConstantColumn(25);
+                                cols.RelativeColumn(3);
+                                cols.ConstantColumn(80);
+                            });
+                            table.Header(header =>
+                            {
+                                header.Cell().Background(Colors.Blue.Lighten3).Padding(5).Text("Nº").Bold();
+                                header.Cell().Background(Colors.Blue.Lighten3).Padding(5).Text("Destino").Bold();
+                                header.Cell().Background(Colors.Blue.Lighten3).Padding(5).Text("Viagens").Bold();
+                            });
+                            int row = 0;
+                            foreach (var dest in destinations)
+                            {
+                                row++;
+                                bool even = row % 2 == 0;
+                                table.Cell().Background(even ? Colors.Grey.Lighten4 : Colors.White).Border(1).BorderColor(Colors.Grey.Lighten2).Padding(4).Text(row.ToString());
+                                table.Cell().Background(even ? Colors.Grey.Lighten4 : Colors.White).Border(1).BorderColor(Colors.Grey.Lighten2).Padding(4).Text(dest.Name ?? "-");
+                                table.Cell().Background(even ? Colors.Grey.Lighten4 : Colors.White).Border(1).BorderColor(Colors.Grey.Lighten2).Padding(4).AlignCenter().Text(dest.Count.ToString()).Bold();
+                            }
+                        });
+                    });
+
+                    page.Footer().AlignCenter().Text(text =>
+                    {
+                        text.Span("Página ").FontSize(8);
+                        text.CurrentPageNumber().FontSize(8);
+                        text.Span(" de ").FontSize(8);
+                        text.TotalPages().FontSize(8);
+                    });
+                });
+            });
+            return document.GeneratePdf();
+        }
     }
 }

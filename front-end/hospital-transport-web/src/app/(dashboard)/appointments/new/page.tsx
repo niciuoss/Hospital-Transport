@@ -689,8 +689,12 @@ export default function NewAppointmentPage() {
                 onClick={() => setStep(2)}
                 disabled={
                   !formData.patientId ||
+                  !formData.medicalRecordNumber ||
+                  !formData.destinationHospital ||
                   !formData.appointmentDate ||
+                  !formData.appointmentTime ||
                   !formData.busId ||
+                  (formData.treatmentType === "4" && !formData.treatmentTypeOther) ||
                   (formData.hasCompanion && !formData.companionId)
                 }
               >
@@ -778,7 +782,12 @@ export default function NewAppointmentPage() {
                 </Label>
                 {buses.find(b => b.id === formData.busId)?.seatLayout === "Microbus" ? (
                   <SeatSelectorMicrobus
-                    seats={seats}
+                    seats={seats.map((seat) => ({
+                      ...seat,
+                      isAvailable:
+                        seat.isAvailable &&
+                        seat.seatNumber !== formData.companionSeatNumber,
+                    }))}
                     selectedSeat={formData.seatNumber}
                     onSelectSeat={(seatNumber) =>
                       setFormData({ ...formData, seatNumber })
@@ -787,7 +796,12 @@ export default function NewAppointmentPage() {
                   />
                 ) : (
                   <SeatSelector
-                    seats={seats}
+                    seats={seats.map((seat) => ({
+                      ...seat,
+                      isAvailable:
+                        seat.isAvailable &&
+                        seat.seatNumber !== formData.companionSeatNumber,
+                    }))}
                     selectedSeat={formData.seatNumber}
                     onSelectSeat={(seatNumber) =>
                       setFormData({ ...formData, seatNumber })

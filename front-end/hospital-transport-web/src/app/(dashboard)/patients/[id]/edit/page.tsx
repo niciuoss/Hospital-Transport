@@ -51,9 +51,12 @@ export default function EditPatientPage({
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    const numericOnlyFields = ["rg", "cpf", "susCardNumber"];
+    const sanitized = numericOnlyFields.includes(name) ? value.replace(/\D/g, "") : value;
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value,
+      [name]: sanitized,
     });
   };
 

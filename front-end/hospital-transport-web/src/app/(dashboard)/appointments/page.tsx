@@ -45,10 +45,13 @@ export default function AppointmentsPage() {
     let filtered = [...appointments];
 
     if (filters.search) {
+      const term = filters.search.toLowerCase();
       filtered = filtered.filter(a =>
-        a.patient.fullName.toLowerCase().includes(filters.search.toLowerCase()) ||
-        a.destinationHospital.toLowerCase().includes(filters.search.toLowerCase()) ||
-        a.medicalRecordNumber.includes(filters.search)
+        a.patient.fullName.toLowerCase().includes(term) ||
+        a.destinationHospital.toLowerCase().includes(term) ||
+        a.medicalRecordNumber.toLowerCase().includes(term) ||
+        (a.patient.cpf && a.patient.cpf.includes(filters.search)) ||
+        (a.patient.susCardNumber && a.patient.susCardNumber.includes(filters.search))
       );
     }
 
@@ -128,7 +131,7 @@ export default function AppointmentsPage() {
             <div className="space-y-2">
               <label className="text-sm font-medium">Buscar</label>
               <Input
-                placeholder="Paciente, hospital ou prontuário..."
+                placeholder="Paciente, hospital, prontuário, CPF ou CNS..."
                 value={filters.search}
                 onChange={(e) => setFilters({ ...filters, search: e.target.value })}
               />

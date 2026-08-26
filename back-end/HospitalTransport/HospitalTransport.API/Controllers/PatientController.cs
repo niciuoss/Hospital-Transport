@@ -1,5 +1,6 @@
 ﻿using HospitalTransport.Application.DTOs.Patient;
 using HospitalTransport.Application.Interfaces;
+using HospitalTransport.Domain.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
 namespace HospitalTransport.API.Controllers
@@ -9,10 +10,14 @@ namespace HospitalTransport.API.Controllers
     public class PatientsController : ControllerBase
     {
         private readonly IPatientService _patientService;
+        private readonly IPdfService _pdfService;
+        private readonly IUnitOfWork _unitOfWork;
 
-        public PatientsController(IPatientService patientService)
+        public PatientsController(IPatientService patientService, IPdfService pdfService, IUnitOfWork unitOfWork)
         {
             _patientService = patientService;
+            _pdfService = pdfService;
+            _unitOfWork = unitOfWork;
         }
 
         [HttpPost]
@@ -96,6 +101,28 @@ namespace HospitalTransport.API.Controllers
             }
 
             return Ok(result);
+        }
+
+        [HttpGet("registrations-report-pdf")]
+        public async Task<IActionResult> GenerateRegistrationsReportPdf([FromQuery] DateTime dateFrom, [FromQuery] DateTime dateTo)
+        {
+            try
+            {
+                var endDate = dateTo.Date.AddHours(23).AddMinutes(59).AddSeconds(59);
+                var patients = (await _unitOfWork.Patients
+                    .FindAsync(p => p.IsActive && p.CreatedAt >= dateFrom.Date && p.CreatedAt <= endDate))
+                    .ToList();
+
+                if (!patients.Any())
+                    return NotFound(new { success = false, message = "Nenhum cadastro encontrado para o período" });
+
+                var pdfBytes = _pdfService.GenerateRegistrationsPdf(patients, dateFrom, dateTo);
+                return File(pdfBytes, "application/pdf", $"relatorio_cadastros_{dateFrom:yyyy-MM-dd}_{dateTo:yyyy-MM-dd}.pdf");
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { success = false, message = $"Erro ao gerar relatório: {ex.Message}" });
+            }
         }
     }
 }

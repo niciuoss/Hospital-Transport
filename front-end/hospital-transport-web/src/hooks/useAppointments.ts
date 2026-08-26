@@ -167,6 +167,63 @@ export function useAppointments() {
     }
   };
 
+  const downloadPatientsReport = async (dateFrom: string, dateTo: string) => {
+    try {
+      const response = await api.get('/appointments/patients-report-pdf', {
+        params: { dateFrom, dateTo },
+        responseType: 'blob'
+      });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `relatorio_pacientes_${dateFrom}_${dateTo}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      toast.success('Relatório de pacientes baixado com sucesso!');
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Erro ao baixar relatório de pacientes');
+    }
+  };
+
+  const downloadCompanionsReport = async (dateFrom: string, dateTo: string) => {
+    try {
+      const response = await api.get('/appointments/companions-report-pdf', {
+        params: { dateFrom, dateTo },
+        responseType: 'blob'
+      });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `relatorio_acompanhantes_${dateFrom}_${dateTo}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      toast.success('Relatório de acompanhantes baixado com sucesso!');
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Erro ao baixar relatório de acompanhantes');
+    }
+  };
+
+  const downloadDestinationsReport = async (dateFrom: string, dateTo: string) => {
+    try {
+      const response = await api.get('/appointments/destinations-report-pdf', {
+        params: { dateFrom, dateTo },
+        responseType: 'blob'
+      });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `relatorio_destinos_${dateFrom}_${dateTo}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      toast.success('Relatório de destinos baixado com sucesso!');
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Erro ao baixar relatório de destinos');
+    }
+  };
+
   return {
     loading,
     getAppointments,
@@ -177,6 +234,9 @@ export function useAppointments() {
     deleteAppointment,
     downloadPassengerList,
     downloadAnnualReport,
-    downloadMonthlyReport
+    downloadMonthlyReport,
+    downloadPatientsReport,
+    downloadCompanionsReport,
+    downloadDestinationsReport,
   };
 }

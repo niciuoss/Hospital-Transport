@@ -226,6 +226,15 @@ namespace HospitalTransport.Application.Services
             }
         }
 
+        private static int CalculateAge(DateOnly birthDate)
+        {
+            var today = DateOnly.FromDateTime(DateTime.Today);
+            var age = today.Year - birthDate.Year;
+            if (today < birthDate.AddYears(age))
+                age--;
+            return age < 0 ? 0 : age;
+        }
+
         private PatientResponse MapToPatientResponse(Patient patient)
         {
             return new PatientResponse
@@ -234,7 +243,7 @@ namespace HospitalTransport.Application.Services
                 FullName = patient.FullName,
                 RG = patient.RG,
                 CPF = patient.CPF,
-                Age = patient.Age,
+                Age = CalculateAge(patient.BirthDate),
                 BirthDate = patient.BirthDate,
                 SusCardNumber = patient.SusCardNumber,
                 PhoneNumber = patient.PhoneNumber,

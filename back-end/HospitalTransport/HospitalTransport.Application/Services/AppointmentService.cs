@@ -80,7 +80,7 @@ namespace HospitalTransport.Application.Services
                     }
                 }
 
-                bool isInfant = patient.Age <= 7;
+                bool isInfant = CalculateAge(patient.BirthDate) <= 7;
 
                 // CRIANÇA DE COLO: Obrigatório ter acompanhante
                 if (isInfant && !request.CompanionId.HasValue)
@@ -103,7 +103,7 @@ namespace HospitalTransport.Application.Services
                     request.IsInfant = false; // Não é "de colo" nesse caso
 
                     var isSeatAvailable = await _unitOfWork.Appointments
-                        .IsSeatAvailableAsync(request.AppointmentDate, request.SeatNumber);
+                        .IsSeatAvailableAsync(request.AppointmentDate, request.SeatNumber, request.BusId);
 
                     if (!isSeatAvailable)
                     {
@@ -126,7 +126,7 @@ namespace HospitalTransport.Application.Services
                     if (request.SeatNumber > 0)
                     {
                         var isSeatAvailable = await _unitOfWork.Appointments
-                            .IsSeatAvailableAsync(request.AppointmentDate, request.SeatNumber);
+                            .IsSeatAvailableAsync(request.AppointmentDate, request.SeatNumber, request.BusId);
 
                         if (!isSeatAvailable)
                         {
@@ -254,7 +254,7 @@ namespace HospitalTransport.Application.Services
                 var appointments = await _unitOfWork.Appointments.FindAsync(a => a.IsActive);
                 var responses = new List<AppointmentResponse>();
 
-                foreach (var appointment in appointments.OrderByDescending(a => a.AppointmentDate))
+                foreach (var appointment in appointments.OrderByDescending(a => a.CreatedAt))
                 {
                     var patient = await _unitOfWork.Patients.GetByIdAsync(appointment.PatientId);
                     var user = await _unitOfWork.Users.GetByIdAsync(appointment.CreatedByUserId);
@@ -534,6 +534,15 @@ namespace HospitalTransport.Application.Services
             }
         }
 
+        private static int CalculateAge(DateOnly birthDate)
+        {
+            var today = DateOnly.FromDateTime(DateTime.Today);
+            var age = today.Year - birthDate.Year;
+            if (today < birthDate.AddYears(age))
+                age--;
+            return age < 0 ? 0 : age;
+        }
+
         private AppointmentResponse MapToAppointmentResponse(
             Appointment appointment,
             Patient patient,
@@ -549,7 +558,7 @@ namespace HospitalTransport.Application.Services
                     FullName = patient.FullName,
                     RG = patient.RG,
                     CPF = patient.CPF,
-                    Age = patient.Age,
+                    Age = CalculateAge(patient.BirthDate),
                     BirthDate = patient.BirthDate,
                     SusCardNumber = patient.SusCardNumber,
                     PhoneNumber = patient.PhoneNumber,
@@ -569,7 +578,7 @@ namespace HospitalTransport.Application.Services
                     FullName = companion.FullName,
                     RG = companion.RG,
                     CPF = companion.CPF,
-                    Age = companion.Age,
+                    Age = CalculateAge(companion.BirthDate),
                     BirthDate = companion.BirthDate,
                     SusCardNumber = companion.SusCardNumber,
                     PhoneNumber = companion.PhoneNumber,

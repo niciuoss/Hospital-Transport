@@ -41,11 +41,13 @@ services:
 
   frontend:
     build:
-      context: ../../../front-end/hospital-transport-web  
+      context: ../../../front-end/hospital-transport-web
       dockerfile: Dockerfile
+      args:
+        - NEXT_PUBLIC_API_URL=http://192.168.0.249:8088/api
     container_name: hospital_transport_frontend
     environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:8088/api
+      - NEXT_PUBLIC_API_URL=http://192.168.0.249:8088/api
     ports:
       - "3000:3000"
     depends_on:

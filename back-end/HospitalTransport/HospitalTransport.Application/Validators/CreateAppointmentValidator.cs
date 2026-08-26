@@ -41,7 +41,7 @@ namespace HospitalTransport.Application.Validators
             RuleFor(x => x.CompanionSeatNumber)
                 .GreaterThan(0).When(x => x.CompanionId.HasValue)
                 .WithMessage("Poltrona do acompanhante é obrigatória")
-                .LessThanOrEqualTo(46).When(x => x.CompanionId.HasValue)
+                .LessThanOrEqualTo(48).When(x => x.CompanionId.HasValue)
                 .WithMessage("Número da poltrona do acompanhante não existe");
 
             RuleFor(x => x.CreatedByUserId)

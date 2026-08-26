@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(docker compose:*)",
+      "Bash(curl -s http://localhost:8088/api/buses)",
+      "Bash(curl -s http://localhost:8088/api/appointments)",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(f''''Total agendamentos: {len\\(d[\"\"data\"\"]\\)}''''\\); [print\\(f''''  - {a[\"\"patient\"\"][\"\"fullName\"\"]} | Poltrona {a[\"\"seatNumber\"\"]} | Criado: {a[\"\"createdAt\"\"]}''''\\) for a in d[''''data''''][:5]]\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://192.168.0.249:3000)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://192.168.0.249:8088/api/buses)"
+    ]
+  }
+}

@@ -95,5 +95,24 @@ const getPatientById = async (id: string): Promise<Patient | null> => {
   }
 };
 
-return { loading, getPatients, searchPatients, createPatient, updatePatient, getPatientById };
+  const downloadRegistrationsReport = async (dateFrom: string, dateTo: string) => {
+    try {
+      const response = await api.get('/patients/registrations-report-pdf', {
+        params: { dateFrom, dateTo },
+        responseType: 'blob'
+      });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `relatorio_cadastros_${dateFrom}_${dateTo}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      toast.success('Relatório de cadastros baixado com sucesso!');
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Erro ao baixar relatório de cadastros');
+    }
+  };
+
+  return { loading, getPatients, searchPatients, createPatient, updatePatient, getPatientById, downloadRegistrationsReport };
 }
