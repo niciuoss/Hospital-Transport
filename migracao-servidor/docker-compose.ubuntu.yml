@@ -1,5 +1,15 @@
 version: '3.8'
 
+# Compose para rodar o Hospital Transport no servidor Ubuntu (192.168.0.72),
+# ao lado do sistema que já existe lá na porta 3000.
+#
+# Diferente do docker-compose.yml original: aqui os serviços "api" e "frontend"
+# usam "image:" (imagens já prontas, carregadas via `docker load` a partir dos
+# .tar em migracao-servidor/backups/) em vez de "build:" — não é preciso ter
+# o código-fonte nem compilar nada no servidor Ubuntu.
+#
+# Uso: docker compose --env-file .env.ubuntu -f docker-compose.ubuntu.yml up -d
+
 services:
   postgres:
     image: postgres:15
@@ -9,7 +19,7 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: HospitalTransportDB
     ports:
-      - "${POSTGRES_PORT:-5439}:5432"
+      - "${POSTGRES_PORT:-5440}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
@@ -22,16 +32,14 @@ services:
     restart: unless-stopped
 
   api:
-    build:
-      context: ..
-      dockerfile: HospitalTransport.API/Dockerfile
+    image: hospitaltransportapi-api:latest
     container_name: hospital_transport_api
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - ASPNETCORE_URLS=http://+:8080
       - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=HospitalTransportDB;Username=postgres;Password=postgres
     ports:
-      - "${API_PORT:-8088}:8080"
+      - "${API_PORT:-8089}:8080"
     depends_on:
       postgres:
         condition: service_healthy
@@ -40,16 +48,10 @@ services:
     restart: unless-stopped
 
   frontend:
-    build:
-      context: ../../../front-end/hospital-transport-web
-      dockerfile: Dockerfile
-      args:
-        - NEXT_PUBLIC_API_URL=http://${SERVER_IP}:${API_PORT:-8088}/api
+    image: hospitaltransportapi-frontend:ubuntu
     container_name: hospital_transport_frontend
-    environment:
-      - NEXT_PUBLIC_API_URL=http://${SERVER_IP}:${API_PORT:-8088}/api
     ports:
-      - "${FRONTEND_PORT:-3000}:3000"
+      - "${FRONTEND_PORT:-3001}:3000"
     depends_on:
       - api
     networks:
