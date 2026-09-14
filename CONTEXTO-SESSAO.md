@@ -232,9 +232,42 @@ GET    /api/appointments/destinations-report-pdf?dateFrom=&dateTo=
 | v1.3 | `3320fea` | v1.3 |
 | back atualizado | `a7d5537` | Atualização do backend |
 | v1.4 | `1308ff5` | 10 correções |
-| **v1.5** | *(sessão atual)* | **IP configurável via .env, IP fixo 192.168.0.252, preparação da migração para o servidor Ubuntu** |
+| v1.5 | `baa5738` | IP configurável via .env, IP fixo 192.168.0.252, preparação da migração para o servidor Ubuntu |
+| **v1.5.1** | *(sessão atual)* | **Correção do processo de migração (restore falhava), backup do banco atualizado** |
 
 ---
+
+## O que foi feito na sessão v1.5.1 (14/09/2026)
+
+Continuação da migração para o Ubuntu: a tentativa de instalar lá tinha rodado (containers
+de pé, app funcionando), mas os dados antigos não vieram junto.
+
+1. **Diagnóstico do "dados não sobem"** — a query de conferência do Passo 4 do
+   `README-MIGRACAO.md` tem aspas escapadas (`\"Users\"`) que se perderam ao ser
+   copiada/colada (provavelmente por algum app que troca aspas retas por curvas), gerando
+   erro do tipo `relation "users" does not exist`. Por causa desse erro, os containers foram
+   todos subidos juntos sem restaurar o backup primeiro — a API aplicou as *migrations* do
+   EF Core sozinha e criou o schema **vazio**, então o sistema "funcionava" mas sem nenhum
+   dado.
+2. **Backup validado** — restaurei o `.sql` existente de forma isolada (sem tocar no sistema
+   real) e confirmei que estava íntegro: bateu com os números esperados (1.336
+   pacientes / 2.097 agendamentos na época).
+3. **`migracao-servidor/restaurar-backup.sh` criado** — script que faz a restauração na
+   ordem certa (sobe só o postgres → espera "healthy" → restaura o `.sql` mais recente da
+   pasta `backups/` → confere as contagens), sem depender de colar comandos com aspas.
+   Também detecta e avisa se o banco já tiver tabelas (sinal de que a API subiu primeiro por
+   engano).
+4. **`README-MIGRACAO.md` atualizado** com o novo script e uma seção "Já subi tudo e está
+   vazio", com o passo a passo pra corrigir a situação em que os containers já estavam no ar
+   no Ubuntu (zerar só o volume novo e vazio de lá, sem mexer na máquina Windows, e
+   restaurar de novo na ordem certa).
+5. **Novo backup do banco gerado** — os dados mudaram desde 11/09 (passagens emitidas), então
+   foi gerado um `pg_dump` novo: `hospital_transport_db_20260914_123539.sql` (ver números
+   atualizados na seção "Migração para o servidor Ubuntu" abaixo). As imagens `.tar` da API e
+   do frontend **não precisaram ser rebuildadas** (nenhuma mudança de código desde o commit
+   `baa5738`).
+6. **`.gitignore`** — adicionado `migracao-servidor.rar` e `migracao-servidor.zip` (pacotes
+   grandes usados só para levar a pasta até o servidor Ubuntu, nunca devem ir pro GitHub).
 
 ## O que foi feito na sessão v1.5 (11/09/2026)
 
@@ -314,17 +347,20 @@ Todo o material está em `migracao-servidor/` na raiz do repo — **leia
   `.gitignore`). Fica só nesta máquina. Se for migrar depois de um tempo, gere backups novos
   antes (os dados mudam todo dia com novos agendamentos).
 
-**Números de referência do banco no momento em que o backup foi gerado (11/09/2026,
-16:51h)** — usar para conferir que nada se perdeu após restaurar no Ubuntu:
+**Números de referência do banco no momento em que o backup foi gerado (14/09/2026,
+12:35h)** — usar para conferir que nada se perdeu após restaurar no Ubuntu:
 
 | Tabela | Registros |
 |---|---|
 | Users | 7 |
-| Patients | 1.335 |
+| Patients | 1.337 |
 | Buses | 2 |
-| Appointments | 2.095 |
+| Appointments | 2.099 |
 
-**Arquivo do backup usado:** `hospital_transport_db_20260911_165142.sql`
+**Arquivo do backup usado:** `hospital_transport_db_20260914_123539.sql`
+
+*(Backup anterior, de 11/09/2026, ainda está em `migracao-servidor/backups/` — pode
+apagar, o script `restaurar-backup.sh` sempre pega o `.sql` mais recente da pasta.)*
 
 ---
 

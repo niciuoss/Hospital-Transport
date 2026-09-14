@@ -70,31 +70,33 @@ docker images | grep hospitaltransportapi
 
 Você deve ver `hospitaltransportapi-api:latest` e `hospitaltransportapi-frontend:ubuntu`.
 
-## Passo 3 — Subir o banco vazio e restaurar o backup
+## Passo 3 e 4 — Subir o banco vazio, restaurar o backup e conferir os dados
+
+**IMPORTANTE:** faça isso ANTES de rodar `docker compose up -d` com todos os serviços.
+Se a API subir primeiro, ela aplica as *migrations* do EF Core sozinha e cria o schema
+**vazio** — depois disso, restaurar o backup por cima dá erro ("already exists") e os
+dados não entram. Se isso já aconteceu com você, veja "Se algo der errado" mais abaixo.
+
+Use o script pronto (evita digitar/colar comandos com aspas escapadas — colar esses
+comandos de dentro de um app de mensagens, Notion, PDF etc. costuma trocar as aspas e
+gerar erros do tipo `relation "users" does not exist`):
 
 ```bash
 cd hospital-transport-migracao
-docker compose --env-file .env.ubuntu -f docker-compose.ubuntu.yml up -d postgres
-
-# Espera o banco ficar "healthy" (uns 10-15s), depois confirme:
-docker ps   # STATUS deve mostrar "healthy" para hospital_transport_db
-
-# Restaura o backup (ajuste o nome do arquivo .sql pela data mais recente em backups/):
-cat backups/hospital_transport_db_<DATA>.sql | docker exec -i hospital_transport_db psql -U postgres -d HospitalTransportDB
+bash restaurar-backup.sh
 ```
 
-## Passo 4 — Conferir que os dados vieram certo (NENHUM dado pode faltar)
+Ele sobe só o postgres, espera ficar "healthy", restaura o `.sql` mais recente da pasta
+`backups/` e já imprime as contagens de Users/Patients/Buses/Appointments no final.
+Compare com os números registrados no `CONTEXTO-SESSAO.md`, seção "Migração para Ubuntu"
+— devem bater exatamente.
 
-```bash
-docker exec hospital_transport_db psql -U postgres -d HospitalTransportDB -t -c "
-SELECT 'Users', count(*) FROM \"Users\"
-UNION ALL SELECT 'Patients', count(*) FROM \"Patients\"
-UNION ALL SELECT 'Buses', count(*) FROM \"Buses\"
-UNION ALL SELECT 'Appointments', count(*) FROM \"Appointments\";"
-```
-
-Compare com os números registrados no backup do dia da migração (anotados no
-`CONTEXTO-SESSAO.md`, seção "Migração para Ubuntu"). Os números devem bater exatamente.
+(Se preferir rodar manualmente em vez do script: suba só o postgres com
+`docker compose --env-file .env.ubuntu -f docker-compose.ubuntu.yml up -d postgres`,
+espere ficar "healthy" no `docker ps`, restaure com
+`cat backups/hospital_transport_db_<DATA>.sql | docker exec -i hospital_transport_db psql -U postgres -d HospitalTransportDB`,
+e confira as contagens com aspas duplas **retas** em volta de cada nome de tabela —
+`"Users"`, `"Patients"` etc. — nunca aspas curvas/tipográficas.)
 
 ## Passo 5 — Subir a API e o front-end
 
@@ -134,3 +136,19 @@ Só depois de usar o sistema no Ubuntu por alguns dias e confirmar que está tud
   apaga só o volume novo e vazio do Ubuntu, não mexe no Windows**) e repita a partir do Passo 3.
 - A máquina Windows continua com os dados originais intactos o tempo todo — a pior coisa que
   pode acontecer é ter que repetir a cópia, nunca perder dado.
+
+### "Já subi tudo (api+frontend) e o app funciona, mas está vazio"
+
+Isso quer dizer que a API subiu antes de você restaurar o backup e criou o schema sozinha
+(vazio) via EF Core migrations. Para corrigir, no servidor Ubuntu:
+
+```bash
+cd hospital-transport-migracao
+docker compose --env-file .env.ubuntu -f docker-compose.ubuntu.yml down
+docker volume rm hospital-transport-migracao_postgres_data   # apaga só o volume vazio daqui, não mexe no Windows
+bash restaurar-backup.sh                                     # sobe o postgres e restaura o backup, na ordem certa
+docker compose --env-file .env.ubuntu -f docker-compose.ubuntu.yml up -d   # só agora sobe api+frontend
+```
+
+Se o nome do volume não for exatamente esse, confira com `docker volume ls` antes de
+remover (deve ser `<nome-da-pasta>_postgres_data`).

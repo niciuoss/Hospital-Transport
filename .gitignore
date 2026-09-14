@@ -55,3 +55,5 @@ TestResults/
 migracao-servidor/backups/
 *.tar
 *.tar.gz
+migracao-servidor.rar
+migracao-servidor.zip
